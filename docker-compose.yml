@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  ansible_llm_api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: ansible_llm_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models
+      - ./logs:/app/logs
+      - ./config:/app/config
+    environment:
+      - PYTHONPATH=/app
+      - LOG_LEVEL=INFO
+    command: python -m src.main api --host 0.0.0.0 --port 8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Optional Ansible Controller container 
+  # Uncomment if you want a dedicated Ansible container
+  # ansible_controller:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.ansible
+  #   container_name: ansible_controller
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - ansible_llm_api
+  #   volumes:
+  #     - ./config:/app/config
+  #     - ./examples:/app/examples
+  #     - ~/.ssh:/home/appuser/.ssh:ro  # SSH keys for connecting to hosts
+  #   environment:
+  #     - ANSIBLE_LLM_API=http://ansible_llm_api:8000
+  #   command: tail -f /dev/null  # Keep the container running

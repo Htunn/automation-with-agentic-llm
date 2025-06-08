@@ -1,0 +1,118 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+.env/
+ENV/
+env.bak/
+venv.bak/
+
+# Distribution / packaging
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Ansible
+*.retry
+
+# Model files (optionally exclude large model files)
+models/*
+!models/.gitkeep
+
+# Logs
+logs/*
+!logs/.gitkeep
+*.log
+*.log.*
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Configuration files with sensitive information
+# Uncomment the next line if you store sensitive information in config files
+# config/*
+# !config/config.example.toml
+
+# Local configuration files
+*.local.toml
+*.local.yml
+*.local.yaml
+
+# Credentials
+*.key
+*.pem
+*.ppk
+secrets/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+.temp/
+
+# Cache
+.cache/
+__pycache__/
+.pytest_cache/
+
+# Generated files
+generated/
+
+# Documentation build
+docs/_build/
+docs/api/
+
+# Local data
+data/

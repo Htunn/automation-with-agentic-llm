@@ -1,0 +1,42 @@
+---
+# Example Ansible playbook for Windows management using SSH
+# This assumes OpenSSH Server is installed and configured on Windows hosts
+- name: Windows Server Management via SSH
+  hosts: windows_servers
+  vars:
+    ansible_connection: ssh
+    ansible_shell_type: cmd
+    # Comment out the following line if using key-based authentication
+    # ansible_password: "{{ windows_ssh_password }}"
+  
+  tasks:
+    - name: Ensure required directories exist
+      win_file:
+        path: "C:\\Temp"
+        state: directory
+
+    - name: Get system information
+      win_shell: systeminfo
+      register: system_info
+
+    - name: Show system information
+      debug:
+        var: system_info.stdout_lines
+
+    - name: Check installed software
+      win_shell: Get-WmiObject -Class Win32_Product | Select-Object Name, Version
+      register: installed_software
+
+    - name: Show installed software
+      debug:
+        var: installed_software.stdout_lines
+
+    - name: Install Windows features
+      win_feature:
+        name: Web-Server
+        state: present
+      register: win_feature
+
+    - name: Restart if required by feature installation
+      win_reboot:
+      when: win_feature.reboot_required

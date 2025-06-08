@@ -1,0 +1,68 @@
+---
+# Example Ansible playbook for setting up OpenSSH Server on Windows
+- name: Set up OpenSSH Server on Windows hosts
+  hosts: windows_servers
+  vars:
+    ansible_connection: ssh
+    ansible_shell_type: cmd
+    # Comment out the following line if using key-based authentication
+    # ansible_password: "{{ windows_ssh_password }}"
+  
+  tasks:
+    - name: Check if OpenSSH is available
+      win_shell: Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH*'
+      register: openssh_check
+      changed_when: false
+      
+    - name: Show OpenSSH status
+      debug:
+        var: openssh_check.stdout_lines
+
+    - name: Install OpenSSH Server
+      win_shell: Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+      when: "'State : Installed' not in openssh_check.stdout"
+      register: install_result
+      
+    - name: Start SSH service
+      win_service:
+        name: sshd
+        state: started
+        start_mode: auto
+        
+    - name: Ensure firewall rule exists
+      win_shell: |
+        $rules = Get-NetFirewallRule -Name *ssh*
+        if (-not $rules) {
+          New-NetFirewallRule -Name sshd -DisplayName 'OpenSSH Server (sshd)' -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22
+        } else {
+          $rules | Format-Table Name, DisplayName, Enabled, Direction, Action, Profile
+        }
+      register: fw_result
+      changed_when: "'No matching rules' in fw_result.stderr"
+      
+    - name: Configure OpenSSH for public key auth
+      win_copy:
+        content: |
+          # OpenSSH Server Configuration
+          # Allow public key authentication
+          PubkeyAuthentication yes
+          # Allow password authentication during setup
+          PasswordAuthentication yes
+          # Subsystem for SFTP
+          Subsystem sftp internal-sftp
+        dest: C:\ProgramData\ssh\sshd_config
+        backup: yes
+
+    - name: Restart SSH service
+      win_service:
+        name: sshd
+        state: restarted
+
+    - name: Verify SSH service is running
+      win_shell: Get-Service sshd | Select-Object Name, Status, StartType
+      register: ssh_status
+      changed_when: false
+      
+    - name: Show SSH service status
+      debug:
+        var: ssh_status.stdout_lines
