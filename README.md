@@ -148,15 +148,16 @@ graph TB
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. Run the setup script:
+3. Install dependencies:
    ```bash
-   python setup.py
+   pip install -e .
    ```
 
-4. (Optional) Download the model:
+4. Download a TinyLlama model:
    ```bash
-   python setup.py --download-model
+   ./models/download_models.sh download tinyllama-1.1b-chat
    ```
+   See the [Model Management Guide](docs/model_management.md) for more options.
 
 5. (Optional) Set up Windows SSH examples:
    ```bash

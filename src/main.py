@@ -14,6 +14,7 @@ sys.path.append(str(project_root))
 
 from src.api.cli import main as cli_main
 from src.llm_engine.model_loader import load_model
+from src.llm_engine.model_download import list_available_models, download_model
 from src.utils.logger import setup_logger
 
 def parse_args():
@@ -34,8 +35,18 @@ def parse_args():
     
     # Model commands
     model_parser = subparsers.add_parser("model", help="Model management")
-    model_parser.add_argument("--download", action="store_true", help="Download the model")
-    model_parser.add_argument("--quantize", choices=["4bit", "8bit"], help="Quantize the model")
+    model_subparsers = model_parser.add_subparsers(dest="model_command", help="Model command to run")
+    
+    # Model list command
+    list_parser = model_subparsers.add_parser("list", help="List available models")
+    
+    # Model download command
+    download_parser = model_subparsers.add_parser("download", help="Download a model")
+    download_parser.add_argument("model_id", help="Model ID or name to download")
+    download_parser.add_argument("--token", help="HuggingFace authentication token for private models")
+    download_parser.add_argument("--output", "-o", help="Custom directory to save the model")
+    download_parser.add_argument("--quantize", choices=["4bit", "8bit"], help="Quantize the model")
+    download_parser.add_argument("--force", "-f", action="store_true", help="Force download even if model exists")
     
     return parser.parse_args()
 
@@ -55,12 +66,18 @@ def main():
         from src.api.rest_api import start_api_server
         start_api_server(host=args.host, port=args.port)
     elif args.command == "model":
-        if args.download:
-            logger.info("Downloading model...")
-            # Implement model downloading
-        if args.quantize:
-            logger.info(f"Quantizing model to {args.quantize}...")
-            # Implement model quantization
+        if not args.model_command or args.model_command == "list":
+            list_available_models()
+        elif args.model_command == "download":
+            download_model(
+                model_id=args.model_id,
+                use_auth_token=args.token,
+                quantize=args.quantize,
+                local_dir=args.output,
+                force=args.force
+            )
+        else:
+            logger.error("Invalid model command. Use 'list' or 'download'.")
     else:
         # Default to CLI
         cli_main()

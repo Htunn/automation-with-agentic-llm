@@ -7,17 +7,9 @@ from pathlib import Path
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-logger = logging.getLogger("ansible_llm")
+from src.llm_engine.model_download import get_model_path, download_model as download_model_func
 
-def get_model_path():
-    """Get the path to the model directory."""
-    # Check if the environment variable is set
-    model_path = os.environ.get("ANSIBLE_LLM_MODEL_PATH")
-    if model_path:
-        return Path(model_path)
-    
-    # Default to models directory in project root
-    return Path(__file__).parent.parent.parent / "models"
+logger = logging.getLogger("ansible_llm")
 
 def load_model(model_name="TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T", 
                quantization=None,
@@ -80,27 +72,15 @@ def load_model(model_name="TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T",
     logger.info("Model loaded successfully")
     return model, tokenizer
 
-def download_model(model_name="TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T"):
+def download_model(model_name="TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T", quantization=None):
     """
     Download the model files.
     
     Args:
         model_name: The name of the model to download.
+        quantization: Optional quantization level ("4bit" or "8bit").
+    
+    Returns:
+        Path to the downloaded model or None if download failed.
     """
-    logger.info(f"Downloading model {model_name}")
-    
-    # Create model directory
-    model_path = get_model_path()
-    model_path.mkdir(exist_ok=True, parents=True)
-    
-    # Download tokenizer and model
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForCausalLM.from_pretrained(model_name)
-    
-    # Save model locally
-    model_save_path = model_path / model_name.split("/")[-1]
-    logger.info(f"Saving model to {model_save_path}")
-    tokenizer.save_pretrained(model_save_path)
-    model.save_pretrained(model_save_path)
-    
-    logger.info("Model downloaded successfully")
+    return download_model_func(model_id=model_name, quantize=quantization)
