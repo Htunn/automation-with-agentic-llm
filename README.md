@@ -148,30 +148,53 @@ graph TB
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. Install dependencies:
+3. Install dependencies and CLI tools:
    ```bash
    pip install -e .
    ```
+   This will make the `ansible-llm` command available in your environment.
 
 4. Download a TinyLlama model:
    ```bash
-   ./models/download_models.sh download tinyllama-1.1b-chat
+   python -m src.main model download TinyLlama-1.1B-Chat-v1.0
    ```
    See the [Model Management Guide](docs/model_management.md) for more options.
 
 5. (Optional) Set up Windows SSH examples:
    ```bash
-   python setup.py --setup-windows-ssh
+   ansible-llm cli setup-examples --windows
    ```
+   
+   After installation, you can use either the module form `python -m src.main` or the installed command `ansible-llm`.
 
 ## Quick Start
 
-### Starting the CLI Interface
+### CLI Usage Examples
 
 ```bash
+# Starting the CLI Interface (shows available commands)
 cd ansible-llm
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 python -m src.main cli
+```
+
+### Available CLI Commands
+
+```bash
+# Generate an Ansible playbook from natural language
+python -m src.main cli generate-playbook "Install and configure Nginx on all web servers with rate limiting"
+
+# Save the generated playbook to a file
+python -m src.main cli generate-playbook "Install and configure Nginx with SSL on web servers" -o nginx_ssl.yml
+
+# Analyze an existing Ansible playbook
+python -m src.main cli analyze-playbook path/to/playbook.yml
+
+# Analyze an Ansible inventory file
+python -m src.main cli analyze-inventory path/to/inventory.ini
+
+# Set up Windows SSH automation examples
+python -m src.main cli setup-examples --windows
 ```
 
 ### Starting the API Server
@@ -182,10 +205,17 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 python -m src.main api --host 0.0.0.0 --port 8000
 ```
 
-### Generating a Playbook
+### Managing Models
 
 ```bash
-python -m src.main cli generate-playbook "Install and configure Nginx on all web servers with rate limiting"
+# List available models
+python -m src.main model list
+
+# Download a specific model
+python -m src.main model download TinyLlama-1.1B-Chat-v1.0
+
+# Download and quantize a model to reduce memory usage
+python -m src.main model download TinyLlama-1.1B-Chat-v1.0 --quantize 8bit
 ```
 
 ### Using Windows SSH Examples

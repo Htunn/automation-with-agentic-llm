@@ -7,9 +7,20 @@ from rich.panel import Panel
 
 console = Console()
 
-@click.group()
-def cli():
+@click.group(invoke_without_command=True)
+@click.pass_context
+def cli(ctx):
     """Ansible TinyLlama 3 Integration CLI."""
+    if ctx.invoked_subcommand is None:
+        # Show welcome message and basic help when no subcommand is provided
+        console.print(Panel.fit("Welcome to Ansible TinyLlama 3 Integration", 
+                               title="[bold green]ansible-llm[/bold green]"))
+        console.print("Available commands:")
+        console.print("  [bold]generate-playbook[/bold] - Generate an Ansible playbook from a description")
+        console.print("  [bold]analyze-playbook[/bold] - Analyze an existing Ansible playbook")
+        console.print("  [bold]analyze-inventory[/bold] - Analyze an Ansible inventory")
+        console.print("  [bold]setup-examples[/bold] - Set up example playbooks and configurations")
+        console.print("\nRun [bold]python -m src.main cli COMMAND --help[/bold] for more information on a specific command.")
     pass
 
 @cli.command()
@@ -52,7 +63,17 @@ def setup_examples(windows):
 
 def main():
     """Run the CLI."""
-    cli()
+    # Use Click's standard pattern for running commands
+    # This will read arguments from sys.argv automatically
+    try:
+        cli(prog_name="ansible-llm")
+    except Exception as e:
+        # Provide better error handling for debugging
+        console.print(f"[bold red]Error:[/bold red] {e}")
+        import traceback
+        console.print(traceback.format_exc())
+        import sys
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

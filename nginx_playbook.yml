@@ -1,0 +1,16 @@
+---
+- name: Install and configure nginx
+  hosts: web_servers
+  become: true
+  tasks:
+    - name: Install nginx package
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+      
+    - name: Ensure nginx is started and enabled
+      service:
+        name: nginx
+        state: started
+        enabled: yes
