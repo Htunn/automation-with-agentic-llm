@@ -1,0 +1,14 @@
+---
+# filepath: /Users/thuthuhtunn/personal/automation-with-agentic-llm/tests/mock_windows_host/raw_test_playbook.yml
+- name: Test PowerShell Execution on Mock Windows Host using Raw module
+  hosts: windows
+  gather_facts: false
+  
+  tasks:
+    - name: Test PowerShell with raw module
+      ansible.builtin.raw: /opt/microsoft/powershell/7/pwsh -Command "Write-Output 'Hello from PowerShell on mock Windows host'; Get-Process | Select-Object -First 5"
+      register: raw_output
+    
+    - name: Show raw output
+      ansible.builtin.debug:
+        var: raw_output.stdout_lines

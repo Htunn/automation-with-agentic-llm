@@ -258,6 +258,97 @@ ansible-llm/
 │       └── logger.py     # Logging setup
 └── setup.py              # Setup script
 
+## Docker Development Environment
+
+A Docker-based development environment is available for easy testing across platforms (Linux, macOS, Windows).
+
+### Prerequisites
+
+- Docker and Docker Compose installed on your system
+- Git to clone the repository
+
+### Getting Started with Docker
+
+1. **Setup the development environment**:
+   ```bash
+   # Clone the repository if you haven't already
+   git clone https://github.com/yourusername/ansible-llm.git
+   cd ansible-llm
+   
+   # Make the dev script executable
+   chmod +x dev.sh
+   
+   # Setup test environment (creates SSH keys for mock hosts)
+   ./dev.sh setup
+   ```
+
+2. **Start the development environment**:
+   ```bash
+   # Start the API server in development mode
+   ./dev.sh start
+   ```
+
+3. **Download a model**:
+   ```bash
+   # List available models
+   ./dev.sh model list
+   
+   # Download a TinyLlama model
+   ./dev.sh model download TinyLlama-1.1B-Chat-v1.0
+   ```
+
+4. **Run tests**:
+   ```bash
+   # Run all tests
+   ./dev.sh test
+   
+   # Run integration tests with mock Windows host
+   ./dev.sh test-integration
+   ```
+
+5. **Access container shell**:
+   ```bash
+   # Get an interactive shell in the container
+   ./dev.sh shell
+   ```
+
+6. **Other useful commands**:
+   ```bash
+   # View logs
+   ./dev.sh logs
+   
+   # Restart the API service
+   ./dev.sh restart
+   
+   # Stop the environment
+   ./dev.sh stop
+   
+   # Clean up everything (including volumes)
+   ./dev.sh clean
+   ```
+
+### Cross-Platform Considerations
+
+- **Windows**: Use PowerShell or WSL2 to run Docker commands
+- **File Permissions**: The container runs as root to avoid permission issues with mounted volumes
+- **SSH Keys**: SSH keys for mock hosts are generated in `tests/mock_windows_host/`
+
+### Testing with Mock Windows Host
+
+The development environment includes a mock Windows host with PowerShell Core for testing Windows automation:
+
+```bash
+# Start the mock Windows host
+./dev.sh test-windows
+```
+
+This host:
+- Runs PowerShell Core in a Linux container
+- Provides SSH access with username 'ansible_user' and password 'ansible_password'
+- Simulates a Windows-like environment with PowerShell
+- Has Windows-like directory structures (C:\Windows, C:\Program Files, etc.)
+- Allows testing of PowerShell scripts via Ansible
+
 ## Development
 
 This project is in active development. The implementation follows the phases outlined in the specification document:
