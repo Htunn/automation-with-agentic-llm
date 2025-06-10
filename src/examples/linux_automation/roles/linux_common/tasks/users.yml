@@ -1,0 +1,63 @@
+---
+# User Management Tasks
+# Manages user accounts and permissions
+
+- name: Show current users
+  ansible.builtin.command: grep -E '^[^:]+:[^:]+:[0-9]{4}' /etc/passwd | cut -d: -f1
+  register: current_users
+  changed_when: false
+
+- name: Display current users
+  ansible.builtin.debug:
+    var: current_users.stdout_lines
+
+- name: Check for sudo group/wheel group
+  ansible.builtin.command: grep -E '^(sudo|wheel):' /etc/group
+  register: sudo_group
+  changed_when: false
+  failed_when: false
+
+- name: Display sudo/wheel group info
+  ansible.builtin.debug:
+    var: sudo_group.stdout_lines
+  when: sudo_group.rc == 0
+
+- name: Check for Docker group
+  ansible.builtin.command: grep -E '^docker:' /etc/group
+  register: docker_group
+  changed_when: false
+  failed_when: false
+
+- name: Create demo user group
+  ansible.builtin.group:
+    name: demogroup
+    state: present
+  become: true
+  register: create_group
+  failed_when: false
+
+- name: Create demo user for testing
+  ansible.builtin.user:
+    name: demouser
+    group: demogroup
+    shell: /bin/bash
+    create_home: yes
+    comment: "Demo User for Ansible Testing"
+  become: true
+  register: create_user
+  failed_when: false
+
+- name: Display user creation status
+  ansible.builtin.debug:
+    msg: "Demo user creation {{ 'successful' if create_user is success else 'failed or skipped' }}"
+
+- name: Create a test file owned by demo user
+  ansible.builtin.copy:
+    content: "This file was created by Ansible Linux Automation"
+    dest: "/tmp/demouser_file.txt"
+    owner: demouser
+    group: demogroup
+    mode: '0644'
+  become: true
+  when: create_user is success
+  failed_when: false

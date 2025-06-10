@@ -2,9 +2,109 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![python3 3.12](https://img.shields.io/badge/python3-3.12-blue.svg)](https://www.python3.org/downloads/release/python3-3120/)
-[![Ansible 2.14+](https://img.shields.io/badge/ansible-2.14%2B-brightgreen.svg)](https://docs.ansible.com/)
+[![Ansible 2.14+](https://img.shields.io/badge/ansible-2.14%2B-bright.svg)](https://docs.ansible.com/)
 
 This project integrates TinyLlama 3, a compact large language model (LLM), with the Ansible automation engine to enhance automation capabilities with AI-driven decision making, natural language processing for playbook generation, and intelligent automation workflows.
+
+## Quick Start with Mock Host testing
+
+```bash
+# 1. Build containers with sshpass support
+docker-compose -f docker-compose.dev.yml build test_runner ansible_llm_api
+
+# 2a. Start Mock Windows testing environment
+docker-compose -f docker-compose.dev.yml up -d test_runner ansible_llm_api mock_windows_host
+
+# 2b. Or start Mock Linux testing environment
+docker-compose -f docker-compose.dev.yml up -d test_runner ansible_llm_api mock_linux_host
+
+# 2c. Or start both testing environments
+docker-compose -f docker-compose.dev.yml up -d test_runner ansible_llm_api mock_windows_host mock_linux_host
+```
+
+## Troubleshooting Mock Hosts
+
+If you encounter issues with either the mock Windows or Linux hosts, try these troubleshooting steps:
+
+##### Common Troubleshooting Steps for Both Hosts
+
+1. **Rebuild all containers with the latest updates**:
+   ```bash
+   docker-compose -f docker-compose.dev.yml build test_runner ansible_llm_api mock_windows_host mock_linux_host
+   ```
+
+2. **Recreate the SSH keys**:
+   ```bash
+   ./dev.sh setup
+   ```
+
+3. **Check SSH connectivity** from the test_runner container:
+   ```bash
+   # For Windows host
+   docker-compose -f docker-compose.dev.yml exec test_runner ssh -o StrictHostKeyChecking=no -i /app/tests/mock_windows_host/id_rsa ansible_user@mock_windows_host
+   # For Linux host
+   docker-compose -f docker-compose.dev.yml exec test_runner ssh -o StrictHostKeyChecking=no -i /app/tests/mock_linux_host/id_rsa ansible_user@mock_linux_host
+   ```
+
+##### Troubleshooting Mock Linux Host
+
+1. **Check if the SSH service is running in the Linux container**:
+   ```bash
+   docker-compose -f docker-compose.dev.yml exec mock_linux_host ps aux | grep sshd
+   ```
+   You should see sshd running in the foreground (`/usr/sbin/sshd -D -e`).
+
+2. **Verify network connectivity**:
+   ```bash
+   docker-compose -f docker-compose.dev.yml exec test_runner ping -c 3 mock_linux_host
+   ```
+
+3. **Check SSH port availability**:
+   ```bash
+   docker-compose -f docker-compose.dev.yml exec test_runner nc -zv mock_linux_host 22
+   ```
+
+4. **Verify the Linux container has started properly**:
+   ```bash
+   docker-compose -f docker-compose.dev.yml logs mock_linux_host
+   ```
+   Look for the message "SSH setup complete, starting SSH daemon in foreground mode".
+
+5. **Check authorized_keys configuration**:
+   ```bash
+   docker-compose -f docker-compose.dev.yml exec mock_linux_host cat /home/ansible_user/.ssh/authorized_keys
+   ```
+   
+6. **Test basic Ansible connectivity with ping module**:
+   ```bash
+   docker-compose -f docker-compose.dev.yml exec test_runner ansible -i tests/mock_linux_host/inventory.ini linux -m ping -e ansible_host_key_checking=false
+   ```
+
+7. **Check permissions for Ansible temporary directories**:
+   ```bash
+   docker-compose -f docker-compose.dev.yml exec mock_linux_host ls -la /home/ansible_user/.ansible
+   ```
+   The .ansible/tmp directory should exist and be owned by ansible_user with 700 permissions.
+
+## Recent Updates
+
+### June 10, 2025
+
+- Added Linux automation examples, roles, and playbooks for comprehensive Linux system management
+- Created Linux Common role with system information, package management, security, and user management tasks
+- Added Linux System Management and Security Hardening playbooks
+- Added Linux processor module for LLM-based Linux automation tasks with distribution detection
+- Created advanced integration tests for Linux automation features
+- Enhanced the dev.sh script with linux-automation and linux-security commands
+- Added mock Linux host for Linux testing scenarios with Ubuntu 22.04
+- Updated inventory.ini for Linux host with proper connection parameters
+- Added Linux-specific prompt templates for LLM integration
+- Enhanced documentation with comprehensive Linux testing and troubleshooting information
+- Added sshpass to the test_runner container to support password-based SSH authentication
+- Fixed PowerShell path in mock Windows host and inventory files (/opt/microsoft/powershell/7/pwsh)
+- Added support for raw module in playbooks to execute PowerShell commands without Python requirements
+- Created raw_test_playbook.yml for easy testing of the mock Windows host
+- Updated troubleshooting steps for common SSH connection issues
 
 ## Features
 
@@ -402,7 +502,103 @@ You can run this test playbook with:
 docker compose -f docker-compose.dev.yml exec -u root -e ANSIBLE_HOST_KEY_CHECKING=False test_runner ansible-playbook -i tests/mock_windows_host/inventory.ini tests/mock_windows_host/raw_test_playbook.yml -v
 ```
 
-> **Important**: Using the `raw` module is recommended for Windows SSH targets as it doesn't rely on python3 being available on the target host. For Windows environments, PowerShell is the preferred scripting language.
+> **Important**: Using the `raw` module is recommended for Windows SSH targets as it doesn't rely on Python being available on the target host. For Windows environments, PowerShell is the preferred scripting language.
+
+### Linux Automation Features
+
+The project includes comprehensive Linux automation capabilities with the following components:
+
+#### Linux Processor Module
+
+The `LinuxProcessor` module (`src/llm_engine/linux_processor.py`) integrates with the LLM engine to handle Linux-specific automation tasks:
+
+- Detects Linux distributions and selects appropriate package managers
+- Generates Ansible tasks for package management, service control, user management, and firewall configuration
+- Processes natural language requests related to Linux automation
+- Supports common Linux distributions (Ubuntu, Debian, CentOS, RHEL, Fedora, etc.)
+
+#### Linux Automation Examples
+
+The project includes ready-to-use Linux automation examples:
+
+1. **Linux Common Role** (`src/examples/linux_automation/roles/linux_common/`):
+   - System information collection tasks
+   - Package management for different Linux distributions
+   - User management tasks
+   - Security hardening features
+
+2. **Linux System Management Playbook** (`src/examples/linux_automation/linux_system_management.yml`):
+   - Demonstrates comprehensive system management
+   - Creates system status reports
+   - Handles service checks and monitoring
+
+3. **Linux Security Hardening Playbook** (`src/examples/linux_automation/linux_security_hardening.yml`):
+   - Implements security best practices for Linux systems
+   - Configures SSH hardening
+   - Sets up firewall rules
+   - Enables automatic security updates
+
+#### Running Linux Automation Examples
+
+You can run the Linux automation examples using the `dev.sh` script:
+
+```bash
+# Run the Linux system management playbook
+./dev.sh linux-automation
+
+# Run the Linux security hardening playbook
+./dev.sh linux-security
+```
+
+### Testing with Mock Linux Host
+
+The project includes a mock Linux host for testing Linux automation scenarios:
+
+```bash
+# Run the Linux test playbook
+docker-compose -f docker-compose.dev.yml exec -u root -e ANSIBLE_HOST_KEY_CHECKING=False test_runner ansible-playbook -i tests/mock_linux_host/inventory.ini tests/mock_linux_host/test_playbook.yml -v
+```
+
+#### Mock Linux Host Features
+
+- Runs Ubuntu 22.04 in a container
+- Provides SSH access with username 'ansible_user' and password 'ansible_password'
+- Has Python 3 pre-installed for Ansible compatibility
+- Supports both password-based and key-based SSH authentication
+- Includes sudo privileges for the ansible_user
+- Configured to work with Ansible's advanced modules
+- Includes test directories and files for automation testing
+
+#### Linux Host Inventory Configuration
+
+The mock Linux host uses the following inventory configuration:
+
+```ini
+[linux]
+mock_linux ansible_host=localhost ansible_port=2223 ansible_user=ansible_user ansible_password=ansible_password ansible_ssh_private_key_file=/app/tests/mock_linux_host/id_rsa
+
+[linux:vars]
+ansible_connection=ssh
+ansible_python_interpreter=/usr/bin/python3
+ansible_become=true
+ansible_become_method=sudo
+ansible_become_user=root
+ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+```
+
+Note that the mock Linux host is accessible via localhost on port 2223 when accessing it from outside the Docker network.
+
+#### Direct SSH Access to Mock Linux Host
+
+You can directly SSH into the mock Linux host for testing:
+
+```bash
+# From the test_runner container using password authentication
+docker-compose -f docker-compose.dev.yml exec test_runner sshpass -p ansible_password ssh -o StrictHostKeyChecking=no ansible_user@mock_linux_host
+
+# Using key-based authentication
+docker-compose -f docker-compose.dev.yml exec test_runner ssh -o StrictHostKeyChecking=no -i /app/tests/mock_linux_host/id_rsa ansible_user@mock_linux_host
+```
 
 #### Troubleshooting Mock Windows Host
 
@@ -448,6 +644,47 @@ If you encounter issues with the mock Windows host, try these troubleshooting st
    ansible_shell_executable=/opt/microsoft/powershell/7/pwsh
    ansible_become=false
    ```
+
+### Linux Integration Tests
+
+The project includes comprehensive integration tests for Linux functionality:
+
+#### Basic Linux Integration Tests
+
+Basic integration tests (`tests/integration/test_linux_integration.py`) verify core Linux host functionality:
+- SSH connectivity to the mock Linux host
+- Running Ansible ping module against the Linux host
+- Gathering facts from the Linux host
+- Executing commands via Ansible
+- Running playbooks against the Linux host
+
+#### Advanced Linux Integration Tests
+
+Advanced integration tests (`tests/integration/test_linux_advanced.py`) verify more complex Linux automation:
+- Running the Linux system management playbook
+- Testing the Linux security hardening playbook
+- Testing the linux_common role
+- Package installation tests
+- File operation tests
+
+#### Linux Processor Tests
+
+The Linux processor tests (`tests/integration/test_linux_processor.py`) verify the LLM integration:
+- Testing the distribution detection functionality
+- Generating package management tasks
+- Generating service control tasks
+- Testing user management task generation
+- Testing firewall configuration
+- LLM request processing for Linux automation
+
+Running the integration tests:
+```bash
+# Run all integration tests
+./dev.sh test-integration
+
+# Run the basic Linux test playbook
+./dev.sh test-linux
+```
 
 ## Recent Updates
 

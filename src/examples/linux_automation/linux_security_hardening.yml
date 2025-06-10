@@ -1,0 +1,117 @@
+---
+# Linux Security Hardening Playbook
+# This playbook implements security best practices for Linux systems
+
+- name: Linux Security Hardening
+  hosts: linux
+  gather_facts: true
+  become: true
+  
+  vars:
+    security_level: "standard"  # Options: basic, standard, high
+    enable_automatic_updates: true
+    disable_root_login: true
+    enable_fail2ban: true
+    
+  tasks:
+    - name: Display security playbook information
+      ansible.builtin.debug:
+        msg: |
+          Running Linux Security Hardening Playbook
+          Security Level: {{ security_level }}
+          Target: {{ inventory_hostname }}
+    
+    - name: Update all packages
+      ansible.builtin.apt:
+        update_cache: yes
+        upgrade: full
+      when: ansible_facts['os_family'] == "Debian"
+      
+    - name: Install security packages
+      ansible.builtin.package:
+        name:
+          - fail2ban
+          - ufw
+          - unattended-upgrades
+          - rkhunter
+          - auditd
+        state: present
+      register: security_packages
+      
+    - name: Configure SSH hardening
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+      with_items:
+        - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
+        - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+        - { regexp: '^#?X11Forwarding', line: 'X11Forwarding no' }
+        - { regexp: '^#?MaxAuthTries', line: 'MaxAuthTries 3' }
+        - { regexp: '^#?AllowTcpForwarding', line: 'AllowTcpForwarding no' }
+        - { regexp: '^#?AllowAgentForwarding', line: 'AllowAgentForwarding no' }
+        - { regexp: '^#?PermitEmptyPasswords', line: 'PermitEmptyPasswords no' }
+      notify: Restart SSH
+      
+    - name: Enable UFW
+      ansible.builtin.ufw:
+        state: enabled
+        policy: deny
+        
+    - name: Allow SSH through UFW
+      ansible.builtin.ufw:
+        rule: allow
+        name: OpenSSH
+        
+    - name: Configure automatic security updates
+      ansible.builtin.lineinfile:
+        path: /etc/apt/apt.conf.d/20auto-upgrades
+        line: "{{ item }}"
+        create: true
+      with_items:
+        - 'APT::Periodic::Update-Package-Lists "1";'
+        - 'APT::Periodic::Unattended-Upgrade "1";'
+        - 'APT::Periodic::AutocleanInterval "7";'
+      when: enable_automatic_updates and ansible_facts['os_family'] == "Debian"
+      
+    - name: Enable and start fail2ban
+      ansible.builtin.service:
+        name: fail2ban
+        enabled: true
+        state: started
+      when: enable_fail2ban
+      
+    - name: Set secure file permissions
+      ansible.builtin.file:
+        path: "{{ item }}"
+        mode: '0600'
+        state: file
+      with_items:
+        - /etc/shadow
+        - /etc/gshadow
+      
+    - name: Generate security report
+      ansible.builtin.copy:
+        content: |
+          SECURITY HARDENING REPORT
+          ========================
+          Host: {{ inventory_hostname }}
+          Date: {{ ansible_date_time.iso8601 }}
+          Security Level: {{ security_level }}
+          
+          Applied Security Measures:
+          - Package updates: Complete
+          - SSH hardening: Complete
+          - UFW firewall: Enabled
+          - Automatic updates: {{ "Enabled" if enable_automatic_updates else "Disabled" }}
+          - Fail2ban protection: {{ "Enabled" if enable_fail2ban else "Disabled" }}
+          - Secure file permissions: Complete
+        dest: /var/log/security_report.txt
+        mode: '0644'
+        
+  handlers:
+    - name: Restart SSH
+      ansible.builtin.service:
+        name: "{{ 'ssh' if ansible_facts['os_family'] == 'Debian' else 'sshd' }}"
+        state: restarted

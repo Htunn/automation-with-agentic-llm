@@ -56,6 +56,26 @@ services:
     profiles:
       - integration  # Only starts when explicitly requested
 
+  # Mock Linux host service for testing Linux SSH scenarios
+  mock_linux_host:
+    build: 
+      context: .
+      dockerfile: Dockerfile.mock-linux
+    container_name: mock_linux_host
+    ports:
+      - "2223:22"  # Map SSH port to 2223 on the host
+    volumes:
+      - ./tests/mock_linux_host:/config
+    networks:
+      - default
+    profiles:
+      - integration  # Only starts when explicitly requested
+    healthcheck:
+      test: ["CMD", "pgrep", "sshd"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+
 volumes:
   ansible_llm_models:  # Persistent storage for model files
   ansible_llm_logs:    # Persistent storage for logs

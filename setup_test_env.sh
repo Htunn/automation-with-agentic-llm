@@ -1,8 +1,9 @@
 #!/bin/bash
-# This script sets up the mock Windows host container for testing
+# This script sets up the mock hosts containers for testing
 
-# Create directory for mock Windows host if it doesn't exist
+# Create directories for mock hosts if they don't exist
 mkdir -p tests/mock_windows_host
+mkdir -p tests/mock_linux_host
 
 # Generate a test SSH key if it doesn't exist
 if [ ! -f tests/mock_windows_host/id_rsa ]; then
@@ -26,4 +27,27 @@ ansible_become=false
 EOF
 
 echo "Created test inventory for mock Windows host"
+
+# Generate a test SSH key for mock Linux host if it doesn't exist
+if [ ! -f tests/mock_linux_host/id_rsa ]; then
+    ssh-keygen -t rsa -b 4096 -f tests/mock_linux_host/id_rsa -N ""
+    chmod 600 tests/mock_linux_host/id_rsa
+    chmod 644 tests/mock_linux_host/id_rsa.pub
+    echo "Generated SSH keys for mock Linux host"
+fi
+
+# Create a test inventory file for the mock Linux host
+cat > tests/mock_linux_host/inventory.ini << EOF
+[linux]
+mock_linux ansible_host=mock_linux_host ansible_port=22 ansible_user=ansible_user ansible_password=ansible_password ansible_ssh_private_key_file=/app/tests/mock_linux_host/id_rsa
+
+[linux:vars]
+ansible_connection=ssh
+ansible_python_interpreter=/usr/bin/python3
+ansible_become=true
+ansible_become_method=sudo
+ansible_become_user=root
+EOF
+
+echo "Created test inventory for mock Linux host"
 echo "Setup complete!"
