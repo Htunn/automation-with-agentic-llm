@@ -1,7 +1,7 @@
 # Ansible-TinyLlama Integration
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
+[![python3 3.12](https://img.shields.io/badge/python3-3.12-blue.svg)](https://www.python3.org/downloads/release/python3-3120/)
 [![Ansible 2.14+](https://img.shields.io/badge/ansible-2.14%2B-brightgreen.svg)](https://docs.ansible.com/)
 
 This project integrates TinyLlama 3, a compact large language model (LLM), with the Ansible automation engine to enhance automation capabilities with AI-driven decision making, natural language processing for playbook generation, and intelligent automation workflows.
@@ -91,7 +91,7 @@ sequenceDiagram
 ```mermaid
 graph TB
     subgraph "Local Development Environment"
-        PY[Python 3.12]
+        PY[python3 3.12]
         VE[Virtual Environment]
         GIT[Git Repository]
         VS[VS Code / Editor]
@@ -129,7 +129,7 @@ graph TB
 
 ## Requirements
 
-- Python 3.12+
+- python3 3.12+
 - Ansible Core 2.14+
 - PyTorch 2.0+ or ONNX Runtime
 - SSH access to Windows hosts (OpenSSH Server installed)
@@ -142,21 +142,21 @@ graph TB
    cd ansible-llm
    ```
 
-2. Create and activate a Python virtual environment:
+2. Create and activate a python3 virtual environment:
    ```bash
-   python3.12 -m venv venv
+   python33.12 -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. Install dependencies and CLI tools:
    ```bash
-   pip install -e .
+   pip3 install -e .
    ```
    This will make the `ansible-llm` command available in your environment.
 
 4. Download a TinyLlama model:
    ```bash
-   python -m src.main model download TinyLlama-1.1B-Chat-v1.0
+   python33 -m src.main model download TinyLlama-1.1B-Chat-v1.0
    ```
    See the [Model Management Guide](docs/model_management.md) for more options.
 
@@ -165,7 +165,7 @@ graph TB
    ansible-llm cli setup-examples --windows
    ```
    
-   After installation, you can use either the module form `python -m src.main` or the installed command `ansible-llm`.
+   After installation, you can use either the module form `python3 -m src.main` or the installed command `ansible-llm`.
 
 ## Quick Start
 
@@ -175,26 +175,26 @@ graph TB
 # Starting the CLI Interface (shows available commands)
 cd ansible-llm
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-python -m src.main cli
+python33 -m src.main cli
 ```
 
 ### Available CLI Commands
 
 ```bash
 # Generate an Ansible playbook from natural language
-python -m src.main cli generate-playbook "Install and configure Nginx on all web servers with rate limiting"
+python3 -m src.main cli generate-playbook "Install and configure Nginx on all web servers with rate limiting"
 
 # Save the generated playbook to a file
-python -m src.main cli generate-playbook "Install and configure Nginx with SSL on web servers" -o nginx_ssl.yml
+python3 -m src.main cli generate-playbook "Install and configure Nginx with SSL on web servers" -o nginx_ssl.yml
 
 # Analyze an existing Ansible playbook
-python -m src.main cli analyze-playbook path/to/playbook.yml
+python3 -m src.main cli analyze-playbook path/to/playbook.yml
 
 # Analyze an Ansible inventory file
-python -m src.main cli analyze-inventory path/to/inventory.ini
+python3 -m src.main cli analyze-inventory path/to/inventory.ini
 
 # Set up Windows SSH automation examples
-python -m src.main cli setup-examples --windows
+python3 -m src.main cli setup-examples --windows
 ```
 
 ### Starting the API Server
@@ -202,20 +202,20 @@ python -m src.main cli setup-examples --windows
 ```bash
 cd ansible-llm
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-python -m src.main api --host 0.0.0.0 --port 8000
+python3 -m src.main api --host 0.0.0.0 --port 8000
 ```
 
 ### Managing Models
 
 ```bash
 # List available models
-python -m src.main model list
+python3 -m src.main model list
 
 # Download a specific model
-python -m src.main model download TinyLlama-1.1B-Chat-v1.0
+python3 -m src.main model download TinyLlama-1.1B-Chat-v1.0
 
 # Download and quantize a model to reduce memory usage
-python -m src.main model download TinyLlama-1.1B-Chat-v1.0 --quantize 8bit
+python3 -m src.main model download TinyLlama-1.1B-Chat-v1.0 --quantize 8bit
 ```
 
 ### Using Windows SSH Examples
@@ -340,16 +340,16 @@ The development environment includes a mock Windows host with PowerShell Core fo
 ```bash
 # Quick Start with Mock Windows testing
 # 1. Build containers with sshpass support
-docker-compose -f docker-compose.dev.yml build test_runner ansible_llm_api
+docker compose -f docker-compose.dev.yml build test_runner ansible_llm_api
 
 # 2. Start all necessary containers
-docker-compose -f docker-compose.dev.yml up -d test_runner ansible_llm_api mock_windows_host
+docker compose -f docker-compose.dev.yml up -d test_runner ansible_llm_api mock_windows_host
 
 # 3. Run the sample test playbook
-docker-compose -f docker-compose.dev.yml exec -u root -e ANSIBLE_HOST_KEY_CHECKING=False test_runner ansible-playbook -i tests/mock_windows_host/inventory.ini tests/mock_windows_host/raw_test_playbook.yml -v
+docker compose -f docker-compose.dev.yml exec -u root -e ANSIBLE_HOST_KEY_CHECKING=False test_runner ansible-playbook -i tests/mock_windows_host/inventory.ini tests/mock_windows_host/raw_test_playbook.yml -v
 
 # Run your own custom playbook
-docker-compose -f docker-compose.dev.yml exec -u root -e ANSIBLE_HOST_KEY_CHECKING=False test_runner ansible-playbook -i tests/mock_windows_host/inventory.ini your_playbook.yml -v
+docker compose -f docker-compose.dev.yml exec -u root -e ANSIBLE_HOST_KEY_CHECKING=False test_runner ansible-playbook -i tests/mock_windows_host/inventory.ini your_playbook.yml -v
 ```
 
 #### Mock Windows Host Features
@@ -367,10 +367,10 @@ You can directly SSH into the mock Windows host for testing:
 
 ```bash
 # From the test_runner container using password authentication
-docker-compose -f docker-compose.dev.yml exec test_runner sshpass -p ansible_password ssh -o StrictHostKeyChecking=no ansible_user@mock_windows_host
+docker compose -f docker-compose.dev.yml exec test_runner sshpass -p ansible_password ssh -o StrictHostKeyChecking=no ansible_user@mock_windows_host
 
 # Run PowerShell commands directly
-docker-compose -f docker-compose.dev.yml exec test_runner sshpass -p ansible_password ssh -o StrictHostKeyChecking=no ansible_user@mock_windows_host /opt/microsoft/powershell/7/pwsh -Command "Write-Output 'Hello from PowerShell!'"
+docker compose -f docker-compose.dev.yml exec test_runner sshpass -p ansible_password ssh -o StrictHostKeyChecking=no ansible_user@mock_windows_host /opt/microsoft/powershell/7/pwsh -Command "Write-Output 'Hello from PowerShell!'"
 ```
 
 > **Note**: The PowerShell executable in the mock Windows host is located at `/opt/microsoft/powershell/7/pwsh`. Always specify the full path when running PowerShell commands.
@@ -399,10 +399,10 @@ A ready-to-use test playbook is included in the repository at `tests/mock_window
 You can run this test playbook with:
 
 ```bash
-docker-compose -f docker-compose.dev.yml exec -u root -e ANSIBLE_HOST_KEY_CHECKING=False test_runner ansible-playbook -i tests/mock_windows_host/inventory.ini tests/mock_windows_host/raw_test_playbook.yml -v
+docker compose -f docker-compose.dev.yml exec -u root -e ANSIBLE_HOST_KEY_CHECKING=False test_runner ansible-playbook -i tests/mock_windows_host/inventory.ini tests/mock_windows_host/raw_test_playbook.yml -v
 ```
 
-> **Important**: Using the `raw` module is recommended for Windows SSH targets as it doesn't rely on Python being available on the target host. For Windows environments, PowerShell is the preferred scripting language.
+> **Important**: Using the `raw` module is recommended for Windows SSH targets as it doesn't rely on python3 being available on the target host. For Windows environments, PowerShell is the preferred scripting language.
 
 #### Troubleshooting Mock Windows Host
 
@@ -410,7 +410,7 @@ If you encounter issues with the mock Windows host, try these troubleshooting st
 
 1. **Rebuild the containers with the latest updates**:
    ```bash
-   docker-compose -f docker-compose.dev.yml build test_runner ansible_llm_api mock_windows_host
+   docker compose -f docker-compose.dev.yml build test_runner ansible_llm_api mock_windows_host
    ```
 
 2. **Check if sshpass is correctly installed in the test_runner container**:
@@ -421,19 +421,19 @@ If you encounter issues with the mock Windows host, try these troubleshooting st
 
 3. **Verify the PowerShell path in the mock Windows host**:
    ```bash
-   docker-compose -f docker-compose.dev.yml exec mock_windows_host find / -name pwsh -type f 2>/dev/null
+   docker compose -f docker-compose.dev.yml exec mock_windows_host find / -name pwsh -type f 2>/dev/null
    ```
    The path should be `/opt/microsoft/powershell/7/pwsh`. Make sure your inventory files and playbooks use this path.
 
 4. **Test SSH connectivity manually**:
    ```bash
-   docker-compose -f docker-compose.dev.yml exec test_runner ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ansible_user@mock_windows_host
+   docker compose -f docker-compose.dev.yml exec test_runner ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ansible_user@mock_windows_host
    # Password: ansible_password
    ```
 
 5. **Verify PowerShell works in the mock host**:
    ```bash
-   docker-compose -f docker-compose.dev.yml exec mock_windows_host /opt/microsoft/powershell/7/pwsh -Command "Write-Output 'Test'"
+   docker compose -f docker-compose.dev.yml exec mock_windows_host /opt/microsoft/powershell/7/pwsh -Command "Write-Output 'Test'"
    ```
 
 6. **Check inventory file configuration**:
@@ -455,7 +455,7 @@ If you encounter issues with the mock Windows host, try these troubleshooting st
 
 - Added sshpass to the test_runner container to support password-based SSH authentication with Ansible
 - Fixed PowerShell path in mock Windows host and inventory files (/opt/microsoft/powershell/7/pwsh)
-- Added support for raw module in playbooks to execute PowerShell commands without Python requirements 
+- Added support for raw module in playbooks to execute PowerShell commands without python3 requirements 
 - Enhanced documentation for working with the mock Windows host
 - Added example playbooks for quick testing and validation
 - Created raw_test_playbook.yml for easy testing of the mock Windows host
