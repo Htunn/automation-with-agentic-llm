@@ -338,16 +338,128 @@ A Docker-based development environment is available for easy testing across plat
 The development environment includes a mock Windows host with PowerShell Core for testing Windows automation:
 
 ```bash
-# Start the mock Windows host
-./dev.sh test-windows
+# Quick Start with Mock Windows testing
+# 1. Build containers with sshpass support
+docker-compose -f docker-compose.dev.yml build test_runner ansible_llm_api
+
+# 2. Start all necessary containers
+docker-compose -f docker-compose.dev.yml up -d test_runner ansible_llm_api mock_windows_host
+
+# 3. Run the sample test playbook
+docker-compose -f docker-compose.dev.yml exec -u root -e ANSIBLE_HOST_KEY_CHECKING=False test_runner ansible-playbook -i tests/mock_windows_host/inventory.ini tests/mock_windows_host/raw_test_playbook.yml -v
+
+# Run your own custom playbook
+docker-compose -f docker-compose.dev.yml exec -u root -e ANSIBLE_HOST_KEY_CHECKING=False test_runner ansible-playbook -i tests/mock_windows_host/inventory.ini your_playbook.yml -v
 ```
 
-This host:
-- Runs PowerShell Core in a Linux container
+#### Mock Windows Host Features
+
+- Runs PowerShell Core 7.x in a Linux container
 - Provides SSH access with username 'ansible_user' and password 'ansible_password'
 - Simulates a Windows-like environment with PowerShell
 - Has Windows-like directory structures (C:\Windows, C:\Program Files, etc.)
 - Allows testing of PowerShell scripts via Ansible
+- Supports password-based SSH authentication using sshpass
+
+#### Direct SSH Access
+
+You can directly SSH into the mock Windows host for testing:
+
+```bash
+# From the test_runner container using password authentication
+docker-compose -f docker-compose.dev.yml exec test_runner sshpass -p ansible_password ssh -o StrictHostKeyChecking=no ansible_user@mock_windows_host
+
+# Run PowerShell commands directly
+docker-compose -f docker-compose.dev.yml exec test_runner sshpass -p ansible_password ssh -o StrictHostKeyChecking=no ansible_user@mock_windows_host /opt/microsoft/powershell/7/pwsh -Command "Write-Output 'Hello from PowerShell!'"
+```
+
+> **Note**: The PowerShell executable in the mock Windows host is located at `/opt/microsoft/powershell/7/pwsh`. Always specify the full path when running PowerShell commands.
+
+#### Complete Testing Example
+
+A ready-to-use test playbook is included in the repository at `tests/mock_windows_host/raw_test_playbook.yml`. This is the recommended approach for testing PowerShell commands with Ansible:
+
+```yaml
+# tests/mock_windows_host/raw_test_playbook.yml
+---
+- name: Test PowerShell Execution on Mock Windows Host using Raw module
+  hosts: windows
+  gather_facts: false
+  
+  tasks:
+    - name: Test PowerShell with raw module
+      ansible.builtin.raw: /opt/microsoft/powershell/7/pwsh -Command "Write-Output 'Hello from PowerShell on mock Windows host'; Get-Process | Select-Object -First 5"
+      register: raw_output
+    
+    - name: Show raw output
+      ansible.builtin.debug:
+        var: raw_output.stdout_lines
+```
+
+You can run this test playbook with:
+
+```bash
+docker-compose -f docker-compose.dev.yml exec -u root -e ANSIBLE_HOST_KEY_CHECKING=False test_runner ansible-playbook -i tests/mock_windows_host/inventory.ini tests/mock_windows_host/raw_test_playbook.yml -v
+```
+
+> **Important**: Using the `raw` module is recommended for Windows SSH targets as it doesn't rely on Python being available on the target host. For Windows environments, PowerShell is the preferred scripting language.
+
+#### Troubleshooting Mock Windows Host
+
+If you encounter issues with the mock Windows host, try these troubleshooting steps:
+
+1. **Rebuild the containers with the latest updates**:
+   ```bash
+   docker-compose -f docker-compose.dev.yml build test_runner ansible_llm_api mock_windows_host
+   ```
+
+2. **Check if sshpass is correctly installed in the test_runner container**:
+   ```bash
+   docker-compose -f docker-compose.dev.yml exec test_runner which sshpass
+   ```
+   If sshpass is not found, it means there might be an issue with the container build. Check the `Dockerfile.dev` to ensure sshpass is included in the apt-get install commands.
+
+3. **Verify the PowerShell path in the mock Windows host**:
+   ```bash
+   docker-compose -f docker-compose.dev.yml exec mock_windows_host find / -name pwsh -type f 2>/dev/null
+   ```
+   The path should be `/opt/microsoft/powershell/7/pwsh`. Make sure your inventory files and playbooks use this path.
+
+4. **Test SSH connectivity manually**:
+   ```bash
+   docker-compose -f docker-compose.dev.yml exec test_runner ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ansible_user@mock_windows_host
+   # Password: ansible_password
+   ```
+
+5. **Verify PowerShell works in the mock host**:
+   ```bash
+   docker-compose -f docker-compose.dev.yml exec mock_windows_host /opt/microsoft/powershell/7/pwsh -Command "Write-Output 'Test'"
+   ```
+
+6. **Check inventory file configuration**:
+   Ensure the inventory file for the mock Windows host has the correct settings:
+   ```ini
+   [windows]
+   mock_windows ansible_host=mock_windows_host ansible_port=22 ansible_user=ansible_user ansible_password=ansible_password
+   
+   [windows:vars]
+   ansible_connection=ssh
+   ansible_shell_type=powershell
+   ansible_shell_executable=/opt/microsoft/powershell/7/pwsh
+   ansible_become=false
+   ```
+
+## Recent Updates
+
+### June 2025
+
+- Added sshpass to the test_runner container to support password-based SSH authentication with Ansible
+- Fixed PowerShell path in mock Windows host and inventory files (/opt/microsoft/powershell/7/pwsh)
+- Added support for raw module in playbooks to execute PowerShell commands without Python requirements 
+- Enhanced documentation for working with the mock Windows host
+- Added example playbooks for quick testing and validation
+- Created raw_test_playbook.yml for easy testing of the mock Windows host
+- Updated troubleshooting steps for common SSH connection issues
 
 ## Development
 
