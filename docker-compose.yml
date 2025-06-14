@@ -8,17 +8,32 @@ services:
     container_name: ansible_llm_api
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"  # Only expose locally for security
     volumes:
-      - ./models:/app/models
+      - ./models:/app/models:ro  # Read-only for models
       - ./logs:/app/logs
-      - ./config:/app/config
+      - ./config:/app/config:ro  # Read-only for configs
     environment:
       - PYTHONPATH=/app
       - LOG_LEVEL=INFO
-    command: python -m src.main api --host 0.0.0.0 --port 8000
+      - TZ=UTC
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+    security_opt:
+      - no-new-privileges:true
+    ulimits:
+      nofile:
+        soft: 4096
+        hard: 8192
       interval: 30s
       timeout: 10s
       retries: 3

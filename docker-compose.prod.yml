@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  ansible_llm_api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: ansible_llm_api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"  # Only expose locally, use reverse proxy for external access
+    volumes:
+      - models_data:/app/models:ro  # Read-only for models
+      - logs_data:/app/logs
+      - config_data:/app/config:ro  # Read-only for configs
+    environment:
+      - PYTHONPATH=/app
+      - LOG_LEVEL=INFO
+      - TZ=UTC
+      # Leave sensitive variables to be set via .env file or environment variables
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+        window: 120s
+    security_opt:
+      - no-new-privileges:true
+    ulimits:
+      nofile:
+        soft: 4096
+        hard: 8192
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+  
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "127.0.0.1:9090:9090"
+    depends_on:
+      - ansible_llm_api
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - prometheus
+
+volumes:
+  models_data:
+    driver: local
+  logs_data:
+    driver: local
+  config_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local

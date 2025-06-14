@@ -1,0 +1,77 @@
+# Production configuration file for Ansible TinyLlama Integration
+
+# LLM Settings
+[llm]
+model_name = "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T"
+quantization = "4bit"  # Options: null, "4bit", "8bit"
+max_tokens = 1024
+temperature = 0.7
+model_cache_dir = "/app/models"
+
+# API Settings
+[api]
+host = "0.0.0.0"  # Listen on all interfaces in container
+port = 8000
+debug = false
+request_timeout = 120  # seconds
+# Security settings
+require_auth = true  # Enable authentication for all endpoints
+token_expiry_minutes = 60  # JWT token expiration time
+rate_limit_enabled = true  # Enable rate limiting
+rate_limit_per_minute = 60  # Requests per minute per client
+
+# Ansible Settings
+[ansible]
+callback_plugins_path = "./src/ansible_plugins/callbacks"
+library_path = "./src/ansible_plugins/modules"
+filter_plugins_path = "./src/ansible_plugins/filters"
+
+# Windows SSH Settings
+[windows_ssh]
+default_user = "Administrator"
+default_port = 22
+enable_key_auth = true
+
+# Logging Settings
+[logging]
+level = "INFO"  # Options: "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
+file = "/app/logs/ansible_llm.log"
+format = "json"  # Options: "text", "json"
+max_size_mb = 100
+backup_count = 5
+log_requests = true  # Log API requests
+
+# Monitoring Settings
+[monitoring]
+enable_metrics = true
+metrics_path = "/metrics"
+collect_system_metrics = true
+custom_labels = { environment = "production" }
+level = "INFO"  # Options: "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
+file = "./logs/ansible_llm.log"
+json_format = true
+log_rotation = true
+max_log_size_mb = 100
+backup_count = 5
+
+# Security Settings
+[security]
+enable_auth = true
+token_expiration_minutes = 60
+require_https = true
+allowed_hosts = ["ansible-controller", "automation-server", "localhost", "127.0.0.1"]
+
+# Performance Settings
+[performance]
+max_concurrent_requests = 10
+worker_threads = 4
+model_unload_timeout_minutes = 30  # Unload model after inactivity
+enable_batch_processing = true
+
+# Monitoring Settings
+[monitoring]
+enable_metrics = true
+prometheus_metrics = true
+metrics_endpoint = "/metrics"
+log_slow_requests = true
+slow_request_threshold_ms = 1000
