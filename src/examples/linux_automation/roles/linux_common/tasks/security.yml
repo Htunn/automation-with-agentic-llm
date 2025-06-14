@@ -1,0 +1,59 @@
+---
+# Security Tasks
+# Implements basic security measures
+
+- name: Check if firewall (ufw) is installed
+  ansible.builtin.command: which ufw
+  register: ufw_check
+  changed_when: false
+  failed_when: false
+
+- name: Install ufw if not present
+  ansible.builtin.package:
+    name: ufw
+    state: present
+  become: true
+  when: ufw_check.rc != 0 and ansible_facts['os_family'] == "Debian"
+
+- name: Check current ufw status
+  ansible.builtin.command: ufw status
+  register: ufw_status
+  changed_when: false
+  failed_when: false
+  become: true
+
+- name: Display current ufw status
+  ansible.builtin.debug:
+    var: ufw_status.stdout_lines
+  when: ufw_status.rc == 0
+
+- name: Ensure important SSH security settings
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+    validate: 'sshd -t -f %s'
+  with_items:
+    - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
+    - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+    - { regexp: '^#?PubkeyAuthentication', line: 'PubkeyAuthentication yes' }
+  become: true
+  register: ssh_config
+  failed_when: false  # Don't fail in test environment
+
+- name: Check if fail2ban is installed
+  ansible.builtin.command: which fail2ban-server
+  register: fail2ban_check
+  changed_when: false
+  failed_when: false
+
+- name: Display security recommendations
+  ansible.builtin.debug:
+    msg: |
+      Recommended security measures:
+      1. Keep system updated with regular patching
+      2. Use strong SSH keys and disable password authentication
+      3. Configure firewall to allow only necessary services
+      4. Install and configure fail2ban for brute-force protection
+      5. Enable automatic security updates

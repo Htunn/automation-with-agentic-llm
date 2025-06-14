@@ -1,0 +1,42 @@
+---
+- name: Test PowerShell Execution on Mock Windows Host
+  hosts: windows
+  gather_facts: false
+  
+  tasks:
+    - name: Run PowerShell command
+      ansible.builtin.shell: |
+        Write-Output "Hello from PowerShell on mock Windows host"
+        Get-Process | Select-Object -First 5
+      args:
+        executable: /opt/microsoft/powershell/7/pwsh
+      register: ps_output
+    
+    - name: Show output
+      ansible.builtin.debug:
+        var: ps_output.stdout_lines
+    
+    - name: Execute PowerShell script
+      ansible.builtin.script: 
+        cmd: tests/mock_windows_host/test_script.ps1
+        executable: /opt/microsoft/powershell/7/pwsh
+      register: script_output
+    
+    - name: Show script output
+      ansible.builtin.debug:
+        var: script_output.stdout_lines
+        
+    - name: Create Windows directory structure
+      ansible.builtin.shell: |
+        if (-not (Test-Path "C:\Program Files\MyApp")) {
+          New-Item -Path "C:\Program Files\MyApp" -ItemType Directory
+        }
+        "App Configuration" | Out-File -FilePath "C:\Program Files\MyApp\config.ini"
+        return "Directory created successfully"
+      args:
+        executable: powershell
+      register: dir_result
+        
+    - name: Show directory creation result
+      ansible.builtin.debug:
+        var: dir_result.stdout

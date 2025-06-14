@@ -1,0 +1,69 @@
+---
+- name: Test basic Linux operations
+  hosts: linux
+  gather_facts: true
+  
+  tasks:
+    - name: Check available disk space
+      ansible.builtin.command: df -h
+      register: df_output
+      changed_when: false
+    
+    - name: Show disk space
+      ansible.builtin.debug:
+        var: df_output.stdout_lines
+    
+    - name: Get system information
+      ansible.builtin.command: uname -a
+      register: uname_output
+      changed_when: false
+    
+    - name: Show system information
+      ansible.builtin.debug:
+        var: uname_output.stdout_lines
+    
+    - name: Get Python version
+      ansible.builtin.command: python3 --version
+      register: python_version
+      changed_when: false
+    
+    - name: Show Python version
+      ansible.builtin.debug:
+        var: python_version.stdout_lines
+    
+    - name: Create a test file
+      ansible.builtin.copy:
+        content: "Created by Ansible test"
+        dest: /tmp/ansible_test_file.txt
+        owner: ansible_user
+        group: ansible_user
+        mode: '0644'
+    
+    - name: Read the test file
+      ansible.builtin.shell: cat /tmp/ansible_test_file.txt
+      register: cat_output
+      changed_when: false
+    
+    - name: Show file content
+      ansible.builtin.debug:
+        var: cat_output.stdout_lines
+        
+    - name: Install a simple package with apt
+      ansible.builtin.apt:
+        name: htop
+        state: present
+        update_cache: yes
+      become: true
+      
+    - name: Create a test directory
+      ansible.builtin.file:
+        path: /home/ansible_user/test_dir
+        state: directory
+        mode: '0755'
+        
+    - name: Create multiple test files
+      ansible.builtin.copy:
+        content: "Test file {{ item }}"
+        dest: "/home/ansible_user/test_dir/file{{ item }}.txt"
+        mode: '0644'
+      loop: [1, 2, 3]

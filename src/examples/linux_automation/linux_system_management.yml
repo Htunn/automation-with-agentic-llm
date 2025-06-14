@@ -1,0 +1,61 @@
+---
+# Linux System Management Playbook
+# This playbook demonstrates advanced Linux automation capabilities
+
+- name: Linux System Management
+  hosts: linux
+  gather_facts: true
+  become: true
+  
+  roles:
+    - linux_common
+    
+  vars:
+    system_check_level: basic  # Options: basic, detailed
+    package_update: true
+    
+  pre_tasks:
+    - name: Show playbook execution information
+      ansible.builtin.debug:
+        msg: |
+          Running Linux System Management Playbook
+          Target: {{ inventory_hostname }}
+          Date: {{ ansible_date_time.date }}
+          Check Level: {{ system_check_level }}
+  
+  tasks:
+    - name: Create system status directory
+      ansible.builtin.file:
+        path: /var/log/ansible-status
+        state: directory
+        mode: '0755'
+      become: true
+    
+    - name: Save system report
+      ansible.builtin.copy:
+        content: |
+          AUTOMATED SYSTEM REPORT
+          =======================
+          Hostname: {{ ansible_hostname }}
+          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          Kernel: {{ ansible_kernel }}
+          CPU Cores: {{ ansible_processor_cores }}
+          Memory: {{ ansible_memtotal_mb | int // 1024 }} GB
+          System Check Level: {{ system_check_level }}
+          Generated: {{ ansible_date_time.iso8601 }}
+        dest: /var/log/ansible-status/system_report.txt
+        mode: '0644'
+      become: true
+      
+    - name: Run custom service check
+      ansible.builtin.shell: |
+        echo "Service Status Report" > /var/log/ansible-status/service_report.txt
+        echo "===================" >> /var/log/ansible-status/service_report.txt
+        systemctl list-units --type=service --state=running | grep -v "systemd" | head -n 10 >> /var/log/ansible-status/service_report.txt
+      become: true
+      changed_when: false
+      
+  post_tasks:
+    - name: Verify playbook execution
+      ansible.builtin.debug:
+        msg: "Linux System Management Playbook completed successfully"

@@ -1,0 +1,15 @@
+---
+# Linux Common Role - Main Tasks
+# This role provides common tasks for Linux system management
+
+- name: Include system information tasks
+  ansible.builtin.import_tasks: system_info.yml
+
+- name: Include package management tasks
+  ansible.builtin.import_tasks: packages.yml
+
+- name: Include security tasks
+  ansible.builtin.import_tasks: security.yml
+
+- name: Include user management tasks 
+  ansible.builtin.import_tasks: users.yml

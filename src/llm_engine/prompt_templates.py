@@ -40,6 +40,40 @@ Include any necessary configuration or setup steps for SSH on Windows.
 Generate a complete, production-ready playbook following Ansible best practices.
 """
 
+# Template for Linux automation
+LINUX_AUTOMATION_TEMPLATE = """
+You are an Ansible automation expert specialized in Linux system administration.
+Create a well-structured Ansible playbook that accomplishes the following task on Linux hosts:
+
+{user_task_description}
+
+Target distribution: {linux_distribution}
+Available package manager: {package_manager}
+
+Ensure compatibility with the specified Linux distribution and use appropriate modules.
+Follow Linux security best practices and idempotent automation principles.
+
+Generate a complete, production-ready playbook following Ansible best practices.
+"""
+
+# Template for Linux security hardening
+LINUX_SECURITY_TEMPLATE = """
+You are a Linux security expert. Create an Ansible playbook that implements security hardening 
+measures for the following Linux environment:
+
+{linux_distribution} {distribution_version}
+Security level required: {security_level}
+
+Include the following security aspects:
+1. User and permission management
+2. SSH hardening
+3. Firewall configuration
+4. Service hardening
+5. System auditing setup
+
+Ensure all tasks are idempotent and follow security best practices for Linux systems.
+"""
+
 # Template for generating infrastructure analysis
 INFRASTRUCTURE_ANALYSIS_TEMPLATE = """
 You are an infrastructure automation expert. Analyze the following Ansible inventory and provide insights:

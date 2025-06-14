@@ -1,0 +1,51 @@
+FROM python:3.12-slim
+
+LABEL maintainer="Your Name <your.email@example.com>"
+LABEL description="Ansible-TinyLlama Integration - Development Environment"
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app
+
+# Create and set working directory
+WORKDIR /app
+
+# Install system dependencies with additional development tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    git \
+    ssh \
+    sshpass \
+    vim \
+    less \
+    procps \
+    htop \
+    net-tools \
+    iputils-ping \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    # Install development and testing packages
+    pip install --no-cache-dir \
+    pytest \
+    pytest-cov \
+    debugpy \
+    ipython
+
+# Create necessary directories
+RUN mkdir -p models logs
+
+# Expose ports for API and debugger
+EXPOSE 8000 5678
+
+# For development, we'll run as root to avoid permission issues with mounted volumes
+# Note: This is only for development. Production should use non-root user.
+
+# Default command - interactive shell for development
+CMD ["/bin/bash"]

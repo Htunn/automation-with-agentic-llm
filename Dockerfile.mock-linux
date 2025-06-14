@@ -1,0 +1,47 @@
+FROM ubuntu:22.04
+
+# Install required packages
+RUN apt-get update && \
+    apt-get install -y openssh-server sudo python3 python3-pip net-tools netcat && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Setup SSH
+RUN mkdir -p /run/sshd /root/.ssh /home/ansible_user/.ssh
+
+# Configure SSH
+RUN echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config && \
+    echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
+    echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config && \
+    echo "ListenAddress 0.0.0.0" >> /etc/ssh/sshd_config
+
+# Create ansible user
+RUN useradd -m ansible_user && \
+    usermod -aG sudo ansible_user && \
+    echo "ansible_user:ansible_password" | chpasswd && \
+    echo "ansible_user ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Setup script to configure authorized keys
+COPY ./tests/mock_linux_host/setup_ssh.sh /setup_ssh.sh
+RUN chmod +x /setup_ssh.sh
+
+# Expose SSH port
+EXPOSE 22
+
+# Make sure SSH service directory exists
+RUN mkdir -p /var/run/sshd
+
+# Create a startup script
+RUN echo '#!/bin/bash\n\
+echo "Starting SSH server setup..."\n\
+# Run setup but remove the background SSH daemon start\n\
+grep -v "sshd -E" /setup_ssh.sh > /setup_ssh_modified.sh\n\
+chmod +x /setup_ssh_modified.sh\n\
+/setup_ssh_modified.sh\n\
+echo "SSH setup complete, starting SSH daemon in foreground mode"\n\
+# Run SSH daemon in foreground mode to keep container alive\n\
+exec /usr/sbin/sshd -D -e\n\
+' > /entrypoint.sh && chmod +x /entrypoint.sh
+
+# Start SSH server
+CMD ["/entrypoint.sh"]

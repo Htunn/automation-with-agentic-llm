@@ -1,0 +1,51 @@
+---
+# Package Management Tasks
+# Handles package installation and management
+
+- name: Update package cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  when: ansible_facts['os_family'] == "Debian"
+  become: true
+
+- name: Install common packages
+  ansible.builtin.package:
+    name:
+      - htop
+      - vim
+      - curl
+      - wget
+      - unzip
+      - net-tools
+      - nmap
+      - git
+    state: present
+  become: true
+  register: package_install
+  
+- name: Show package installation status
+  ansible.builtin.debug:
+    msg: "Package installation completed successfully"
+  when: package_install is success
+
+- name: Check if Docker is installed
+  ansible.builtin.command: which docker
+  register: docker_check
+  changed_when: false
+  failed_when: false
+
+- name: Install docker dependencies
+  ansible.builtin.package:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - gnupg
+      - lsb-release
+    state: present
+  become: true
+  when: docker_check.rc != 0 and ansible_facts['os_family'] == "Debian"
+
+- name: Display Docker installation status
+  ansible.builtin.debug:
+    msg: "Docker is {{ 'already installed' if docker_check.rc == 0 else 'not installed' }}"

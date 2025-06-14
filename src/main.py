@@ -12,7 +12,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
 
-from src.api.cli import main as cli_main
+from src.api.direct_cli import run_cli
 from src.llm_engine.model_loader import load_model
 from src.llm_engine.model_download import list_available_models, download_model
 from src.utils.logger import setup_logger
@@ -25,8 +25,9 @@ def parse_args():
     
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
     
-    # CLI command
+    # CLI command - allow it to accept any arguments after 'cli'
     cli_parser = subparsers.add_parser("cli", help="Run CLI interface")
+    cli_parser.add_argument('cli_args', nargs=argparse.REMAINDER, help=argparse.SUPPRESS)
     
     # API command
     api_parser = subparsers.add_parser("api", help="Run API server")
@@ -52,6 +53,23 @@ def parse_args():
 
 def main():
     """Main entry point."""
+    # Special case for 'cli' command - we need to handle this before argparse
+    # to preserve quoted arguments and pass them correctly to Click
+    if len(sys.argv) > 1 and sys.argv[1] == "cli":
+        # Setup logging first
+        debug_mode = "--debug" in sys.argv
+        log_level = logging.DEBUG if debug_mode else logging.INFO
+        logger = setup_logger(level=log_level)
+        
+        logger.info("Starting Ansible TinyLlama 3 Integration")
+        
+        # Extract all arguments after "cli"
+        cli_args = sys.argv[2:]
+        # Run the CLI module with these arguments
+        run_cli(cli_args)
+        return
+    
+    # For all other commands (model, api, etc.), use argparse as usual
     args = parse_args()
     
     # Setup logging
@@ -60,9 +78,7 @@ def main():
     
     logger.info("Starting Ansible TinyLlama 3 Integration")
     
-    if args.command == "cli":
-        cli_main()
-    elif args.command == "api":
+    if args.command == "api":
         from src.api.rest_api import start_api_server
         start_api_server(host=args.host, port=args.port)
     elif args.command == "model":
@@ -78,9 +94,13 @@ def main():
             )
         else:
             logger.error("Invalid model command. Use 'list' or 'download'.")
+    elif not args.command:
+        # Default to showing help
+        logger.info("No command specified. Use --help to see available commands.")
+        parser = argparse.ArgumentParser(description="Ansible TinyLlama 3 Integration")
+        parser.print_help()
     else:
-        # Default to CLI
-        cli_main()
+        logger.error(f"Unknown command: {args.command}")
 
 if __name__ == "__main__":
     main()

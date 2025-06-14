@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # Main API service with development configuration
+  ansible_llm_api:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: ansible_llm_api_dev
+    restart: unless-stopped
+    ports:
+      - "8000:8000"  # API port
+      - "5678:5678"  # Debugger port
+    volumes:
+      # Mount the entire project for development (code changes are reflected immediately)
+      - .:/app
+      # Use separate named volumes for models and logs to persist between container restarts
+      - ansible_llm_models:/app/models
+      - ansible_llm_logs:/app/logs
+    environment:
+      - PYTHONPATH=/app
+      - LOG_LEVEL=DEBUG  # More verbose logging for development
+      - PYTHONUNBUFFERED=1
+    # Override default command to use the debuggable server
+    command: python -m src.main api --host 0.0.0.0 --port 8000
+
+  # Test runner service for running tests
+  test_runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: ansible_llm_tests
+    volumes:
+      - .:/app
+      - ansible_llm_models:/app/models  # Share models with the API container
+    environment:
+      - PYTHONPATH=/app
+      - PYTEST_ADDOPTS="-v"  # Verbose test output
+    # This service doesn't start automatically - use docker-compose run test_runner to run tests
+    command: pytest
+    depends_on:
+      - ansible_llm_api
+    profiles:
+      - testing  # Only starts when explicitly requested
+
+  # Mock target host service for testing Windows SSH scenarios with PowerShell
+  mock_windows_host:
+    build: 
+      context: .
+      dockerfile: Dockerfile.mock-windows
+    container_name: mock_windows_host
+    ports:
+      - "2222:22"  # Map SSH port to 2222 on the host
+    volumes:
+      - ./tests/mock_windows_host:/config
+    profiles:
+      - integration  # Only starts when explicitly requested
+
+  # Mock Linux host service for testing Linux SSH scenarios
+  mock_linux_host:
+    build: 
+      context: .
+      dockerfile: Dockerfile.mock-linux
+    container_name: mock_linux_host
+    ports:
+      - "2223:22"  # Map SSH port to 2223 on the host
+    volumes:
+      - ./tests/mock_linux_host:/config
+    networks:
+      - default
+    profiles:
+      - integration  # Only starts when explicitly requested
+    healthcheck:
+      test: ["CMD", "pgrep", "sshd"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  ansible_llm_models:  # Persistent storage for model files
+  ansible_llm_logs:    # Persistent storage for logs
