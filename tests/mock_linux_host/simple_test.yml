@@ -1,0 +1,17 @@
+---
+- name: Simple Test for SSH Connection
+  hosts: linux
+  gather_facts: no
+  
+  tasks:
+    - name: Check connection with ping
+      ansible.builtin.ping:
+      
+    - name: Run a simple command that doesn't require disk space
+      ansible.builtin.command: echo "Hello from Ansible"
+      register: hello_output
+      changed_when: false
+    
+    - name: Display output
+      ansible.builtin.debug:
+        var: hello_output.stdout

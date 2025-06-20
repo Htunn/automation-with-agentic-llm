@@ -1,24 +1,18 @@
 FROM mcr.microsoft.com/powershell:latest
 
-# Install OpenSSH Server
+# Install OpenSSH Server and configure system
 RUN apt-get update && \
     apt-get install -y openssh-server sudo curl && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-# Setup SSH
-RUN mkdir -p /run/sshd /root/.ssh /home/ansible_user/.ssh
-
-# Configure SSH
-RUN echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config && \
+    mkdir -p /run/sshd /root/.ssh /home/ansible_user/.ssh && \
+    echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config && \
     echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
-    echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config
-
-# Create ansible user
-RUN useradd -m ansible_user && \
+    echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config && \
+    useradd -m ansible_user && \
     usermod -aG sudo ansible_user && \
     echo "ansible_user:ansible_password" | chpasswd && \
-    echo "ansible_user ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+    echo "ansible_user ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Setup script to configure authorized keys
 COPY ./tests/mock_windows_host/setup_ssh.sh /setup_ssh.sh
@@ -29,8 +23,16 @@ RUN mkdir -p /C/Windows/System32 /C/Program\ Files /C/Users/ansible_user && \
     echo "Windows PowerShell" > /C/Windows/System32/WindowsPowerShell.txt && \
     echo "Mock Windows Environment" > /C/Users/ansible_user/Desktop.txt
 
-# Expose SSH port
-EXPOSE 22
-
-# Start SSH server and PowerShell
-CMD ["/bin/bash", "-c", "/setup_ssh.sh && /usr/sbin/sshd -D"]
+# Create necessary directories with sufficient permissions and free space
+# Setup sample Windows-like directories and files for tests
+# and create necessary directories with permissions
+RUN mkdir -p /C/Windows/System32 /C/Program\ Files /C/Users/ansible_user && \
+    echo "Windows PowerShell" > /C/Windows/System32/WindowsPowerShell.txt && \
+    echo "Mock Windows Environment" > /C/Users/ansible_user/Desktop.txt && \
+    mkdir -p /home/ansible_user/.ansible/tmp && \
+    chown -R ansible_user:ansible_user /home/ansible_user/.ansible && \
+    chmod -R 0755 /home/ansible_user/.ansible && \
+    rm -rf /tmp/* && mkdir -p /tmp && chmod 1777 /tmp && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    find /var/cache -type f -delete

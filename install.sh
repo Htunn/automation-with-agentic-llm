@@ -83,6 +83,18 @@ echo "Installing required packages..."
 pip install --upgrade pip
 pip install -r requirements.txt
 
+# Check if running on CPU-only machine and needs bitsandbytes
+if [[ "$OSTYPE" == "darwin"* ]] || ! command -v nvidia-smi &> /dev/null; then
+    echo -e "\n${YELLOW}Detected CPU-only environment.${NC}"
+    read -p "Install CPU-compatible bitsandbytes for model quantization? (y/N): " CPU_BNB
+    if [[ "$CPU_BNB" =~ ^[Yy]$ ]]; then
+        echo -e "${BLUE}Installing CPU-compatible bitsandbytes...${NC}"
+        pip uninstall -y bitsandbytes
+        pip install -U bitsandbytes --prefer-binary --extra-index-url=https://jllllll.github.io/bitsandbytes-windows-webui
+        echo -e "${GREEN}CPU-compatible bitsandbytes installation complete.${NC}"
+    fi
+fi
+
 # Install development dependencies if requested
 read -p "Install development dependencies? (y/N): " DEV_DEPS
 if [[ "$DEV_DEPS" =~ ^[Yy]$ ]]; then
@@ -140,10 +152,10 @@ echo -e "${BLUE}To use the CLI interface: python -m src.main cli${NC}"
 # Docker instructions
 echo -e "\n${YELLOW}Docker Instructions:${NC}"
 echo "To build and run with Docker:"
-echo "  docker-compose build"
-echo "  docker-compose up -d"
+echo "  docker compose build"
+echo "  docker compose up -d"
 echo "For production deployment:"
-echo "  docker-compose -f docker-compose.prod.yml build"
-echo "  docker-compose -f docker-compose.prod.yml up -d"
+echo "  docker compose -f docker-compose.prod.yml build"
+echo "  docker compose -f docker-compose.prod.yml up -d"
 
 echo -e "\n${BLUE}Thank you for installing Ansible TinyLlama Integration!${NC}"

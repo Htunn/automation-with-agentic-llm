@@ -46,27 +46,55 @@ def load_model(model_name="TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T",
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
     
     # Load model with quantization if specified
-    if quantization == "4bit":
-        try:
-            from transformers import BitsAndBytesConfig
-            quantization_config = BitsAndBytesConfig(load_in_4bit=True)
+    try:
+        if quantization == "4bit":
+            try:
+                from transformers import BitsAndBytesConfig
+                quantization_config = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_compute_dtype=torch.float16,
+                    bnb_4bit_use_double_quant=True,
+                    bnb_4bit_quant_type="nf4"
+                )
+                logger.info("Loading model with 4-bit quantization")
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_name_or_path,
+                    quantization_config=quantization_config,
+                    device_map="auto" if device == "cuda" else None,
+                    torch_dtype=torch.float16
+                )
+                if device != "cuda":
+                    model = model.to(device)
+            except (ImportError, ValueError, RuntimeError) as e:
+                logger.warning(f"4-bit quantization failed: {e}. Falling back to 8-bit.")
+                quantization = "8bit"
+        
+        if quantization == "8bit":
+            try:
+                logger.info("Loading model with 8-bit quantization")
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_name_or_path, 
+                    load_in_8bit=True, 
+                    device_map="auto" if device == "cuda" else None,
+                    torch_dtype=torch.float16
+                )
+                if device != "cuda":
+                    model = model.to(device)
+            except (ImportError, ValueError, RuntimeError) as e:
+                logger.warning(f"8-bit quantization failed: {e}. Loading full precision model.")
+                quantization = None
+        
+        if quantization is None:
+            # Load normal model
+            logger.info("Loading model in full precision")
             model = AutoModelForCausalLM.from_pretrained(
                 model_name_or_path,
-                quantization_config=quantization_config,
-                device_map=device
-            )
-        except ImportError:
-            logger.warning("4-bit quantization requires additional dependencies. Falling back to 8-bit.")
-            quantization = "8bit"
-    
-    if quantization == "8bit":
-        try:
-            model = AutoModelForCausalLM.from_pretrained(model_name_or_path, load_in_8bit=True, device_map=device)
-        except ImportError:
-            logger.warning("8-bit quantization requires additional dependencies. Loading full model.")
-            model = AutoModelForCausalLM.from_pretrained(model_name_or_path).to(device)
-    else:
-        # Load normal model
+                torch_dtype=torch.float16 if device == "cuda" else torch.float32
+            ).to(device)
+    except Exception as e:
+        logger.error(f"Error loading model: {e}")
+        logger.info("Attempting to load model with minimal settings...")
+        # Last resort - try with minimal settings
         model = AutoModelForCausalLM.from_pretrained(model_name_or_path).to(device)
     
     logger.info("Model loaded successfully")

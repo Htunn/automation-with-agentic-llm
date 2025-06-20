@@ -1,0 +1,31 @@
+---
+- name: Simple Test for Windows SSH Connection
+  hosts: windows
+  gather_facts: no
+  
+  tasks:
+    - name: Check connection with ping
+      ansible.builtin.ping:
+      
+    - name: Run a simple command using bash
+      ansible.builtin.command: echo "Hello from mock Windows host"
+      args:
+        executable: /bin/bash
+      register: hello_output
+      changed_when: false
+    
+    - name: Display output
+      ansible.builtin.debug:
+        var: hello_output.stdout
+        
+    - name: Verify pwsh location
+      ansible.builtin.command: which pwsh
+      args:
+        executable: /bin/bash
+      register: pwsh_location
+      changed_when: false
+      ignore_errors: true
+      
+    - name: Display pwsh location
+      ansible.builtin.debug:
+        var: pwsh_location.stdout

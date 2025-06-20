@@ -50,4 +50,20 @@ ansible_become_user=root
 EOF
 
 echo "Created test inventory for mock Linux host"
+
+# Create SSH config directory in your user's home directory if it doesn't exist
+mkdir -p ~/.ssh
+# Add entries to SSH config to disable host key checking for test hosts
+cat > ~/.ssh/config << EOF
+Host mock_linux_host
+    StrictHostKeyChecking no
+    UserKnownHostsFile=/dev/null
+
+Host mock_windows_host
+    StrictHostKeyChecking no
+    UserKnownHostsFile=/dev/null
+EOF
+
+chmod 600 ~/.ssh/config
+echo "Updated SSH config for host key checking"
 echo "Setup complete!"

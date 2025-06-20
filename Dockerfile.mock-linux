@@ -31,6 +31,14 @@ EXPOSE 22
 # Make sure SSH service directory exists
 RUN mkdir -p /var/run/sshd
 
+# Create necessary directories with sufficient permissions
+RUN mkdir -p /home/ansible_user/.ansible/tmp && \
+    chown -R ansible_user:ansible_user /home/ansible_user/.ansible && \
+    chmod -R 0755 /home/ansible_user/.ansible && \
+    echo "Cleaning up to free space" && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 # Create a startup script
 RUN echo '#!/bin/bash\n\
 echo "Starting SSH server setup..."\n\

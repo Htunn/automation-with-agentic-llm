@@ -10,16 +10,16 @@ This project integrates TinyLlama 3, a compact large language model (LLM), with 
 
 ```bash
 # 1. Build containers with sshpass support
-docker-compose -f docker-compose.dev.yml build test_runner ansible_llm_api
+docker compose -f docker-compose.dev.yml build test_runner ansible_llm_api
 
 # 2a. Start Mock Windows testing environment
-docker-compose -f docker-compose.dev.yml up -d test_runner ansible_llm_api mock_windows_host
+docker compose -f docker-compose.dev.yml up -d test_runner ansible_llm_api mock_windows_host
 
 # 2b. Or start Mock Linux testing environment
-docker-compose -f docker-compose.dev.yml up -d test_runner ansible_llm_api mock_linux_host
+docker compose -f docker-compose.dev.yml up -d test_runner ansible_llm_api mock_linux_host
 
 # 2c. Or start both testing environments
-docker-compose -f docker-compose.dev.yml up -d test_runner ansible_llm_api mock_windows_host mock_linux_host
+docker compose -f docker-compose.dev.yml up -d test_runner ansible_llm_api mock_windows_host mock_linux_host
 ```
 
 ## Troubleshooting Mock Hosts
@@ -28,65 +28,83 @@ If you encounter issues with either the mock Windows or Linux hosts, try these t
 
 ##### Common Troubleshooting Steps for Both Hosts
 
-1. **Rebuild all containers with the latest updates**:
+1. **Use the automated SSH fix script** (recommended first step):
    ```bash
-   docker-compose -f docker-compose.dev.yml build test_runner ansible_llm_api mock_windows_host mock_linux_host
+   ./scripts/fix_ssh.sh
+   ```
+   This tool automatically regenerates SSH keys, sets proper permissions, and verifies connectivity.
+
+2. **Rebuild all containers with the latest updates**:
+   ```bash
+   docker compose -f docker-compose.dev.yml build test_runner ansible_llm_api mock_windows_host mock_linux_host
    ```
 
-2. **Recreate the SSH keys**:
+3. **Recreate the SSH keys manually** (alternative to fix_ssh.sh):
    ```bash
    ./dev.sh setup
    ```
 
-3. **Check SSH connectivity** from the test_runner container:
+4. **Check SSH connectivity** from the test_runner container:
    ```bash
    # For Windows host
-   docker-compose -f docker-compose.dev.yml exec test_runner ssh -o StrictHostKeyChecking=no -i /app/tests/mock_windows_host/id_rsa ansible_user@mock_windows_host
+   docker compose -f docker-compose.dev.yml exec test_runner ssh -o StrictHostKeyChecking=no -i /app/tests/mock_windows_host/id_rsa ansible_user@mock_windows_host
    # For Linux host
-   docker-compose -f docker-compose.dev.yml exec test_runner ssh -o StrictHostKeyChecking=no -i /app/tests/mock_linux_host/id_rsa ansible_user@mock_linux_host
+   docker compose -f docker-compose.dev.yml exec test_runner ssh -o StrictHostKeyChecking=no -i /app/tests/mock_linux_host/id_rsa ansible_user@mock_linux_host
    ```
 
 ##### Troubleshooting Mock Linux Host
 
 1. **Check if the SSH service is running in the Linux container**:
    ```bash
-   docker-compose -f docker-compose.dev.yml exec mock_linux_host ps aux | grep sshd
+   docker compose -f docker-compose.dev.yml exec mock_linux_host ps aux | grep sshd
    ```
    You should see sshd running in the foreground (`/usr/sbin/sshd -D -e`).
 
 2. **Verify network connectivity**:
    ```bash
-   docker-compose -f docker-compose.dev.yml exec test_runner ping -c 3 mock_linux_host
+   docker compose -f docker-compose.dev.yml exec test_runner ping -c 3 mock_linux_host
    ```
 
 3. **Check SSH port availability**:
    ```bash
-   docker-compose -f docker-compose.dev.yml exec test_runner nc -zv mock_linux_host 22
+   docker compose -f docker-compose.dev.yml exec test_runner nc -zv mock_linux_host 22
    ```
 
 4. **Verify the Linux container has started properly**:
    ```bash
-   docker-compose -f docker-compose.dev.yml logs mock_linux_host
+   docker compose -f docker-compose.dev.yml logs mock_linux_host
    ```
    Look for the message "SSH setup complete, starting SSH daemon in foreground mode".
 
 5. **Check authorized_keys configuration**:
    ```bash
-   docker-compose -f docker-compose.dev.yml exec mock_linux_host cat /home/ansible_user/.ssh/authorized_keys
+   docker compose -f docker-compose.dev.yml exec mock_linux_host cat /home/ansible_user/.ssh/authorized_keys
    ```
    
 6. **Test basic Ansible connectivity with ping module**:
    ```bash
-   docker-compose -f docker-compose.dev.yml exec test_runner ansible -i tests/mock_linux_host/inventory.ini linux -m ping -e ansible_host_key_checking=false
+   docker compose -f docker-compose.dev.yml exec test_runner ansible -i tests/mock_linux_host/inventory.ini linux -m ping -e ansible_host_key_checking=false
    ```
 
 7. **Check permissions for Ansible temporary directories**:
    ```bash
-   docker-compose -f docker-compose.dev.yml exec mock_linux_host ls -la /home/ansible_user/.ansible
+   docker compose -f docker-compose.dev.yml exec mock_linux_host ls -la /home/ansible_user/.ansible
    ```
    The .ansible/tmp directory should exist and be owned by ansible_user with 700 permissions.
 
 ## Recent Updates
+
+### June 21, 2025
+
+- Added comprehensive troubleshooting documentation for both mock Windows and Linux hosts
+- Enhanced the `dev.sh` script with more capabilities for testing and environment management 
+- Added `fix_ssh.sh` script to quickly resolve SSH connection issues with mock hosts
+- Improved documentation for cross-platform considerations and SSH key management
+- Added Linux automation examples with system management and security hardening playbooks
+- Enhanced the mock Linux host with Ubuntu 22.04 and full Ansible module support
+- Updated troubleshooting steps with detailed commands for verifying connections
+- Added support for raw module in Windows playbooks to execute PowerShell commands without Python requirements
+- Fixed PowerShell path in mock Windows host and inventory files (`/opt/microsoft/powershell/7/pwsh`)
 
 ### June 10, 2025
 
@@ -252,13 +270,10 @@ graph TB
 
 3. Install dependencies and CLI tools:
    ```bash
-<<<<<<< HEAD
    pip install -r requirements.txt
    pip install -r requirements-dev.txt  # For development tools
    pip install -e .  # Install in development mode
-=======
    pip3 install -e .
->>>>>>> 8991e3e979b42abc899c6625c1b9fccf56b46070
    ```
    This will make the `ansible-llm` command available in your environment.
 
@@ -270,7 +285,6 @@ graph TB
 
 5. Set up configuration:
    ```bash
-<<<<<<< HEAD
    cp config/config.toml config/config.local.toml
    # Edit config/config.local.toml with your preferences
    ```
@@ -320,9 +334,7 @@ You can also use Docker for development:
 4. Run tests in the container:
    ```bash
    docker-compose exec ansible_llm_api pytest
-=======
    ansible-llm cli setup-examples --windows
->>>>>>> 8991e3e979b42abc899c6625c1b9fccf56b46070
    ```
    
    After installation, you can use either the module form `python3 -m src.main` or the installed command `ansible-llm`.
@@ -338,7 +350,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 python33 -m src.main cli
 ```
 
-### Available CLI Commands
+### Available Ansible-llm CLI Commands
 
 ```bash
 # Generate an Ansible playbook from natural language
@@ -368,14 +380,14 @@ python3 -m src.main api --host 0.0.0.0 --port 8000
 ### Managing Models
 
 ```bash
-<<<<<<< HEAD
-# Generate a playbook through CLI
-python -m src.main cli generate-playbook "Install and configure Nginx on all web servers with rate limiting"
+# List available models
+python3 -m src.main model list
 
-# Generate a playbook through API (using curl)
-curl -X POST "http://localhost:8000/generate_playbook" \
-  -H "Content-Type: application/json" \
-  -d '{"description": "Install and configure Nginx on all web servers with rate limiting", "target_os": "Linux"}'
+# Download a specific model
+python3 -m src.main model download TinyLlama-1.1B-Chat-v1.0
+
+# Download and quantize a model to reduce memory usage
+python3 -m src.main model download TinyLlama-1.1B-Chat-v1.0 --quantize 8bit
 ```
 
 ### Analyzing an Existing Playbook
@@ -388,16 +400,6 @@ python -m src.main cli analyze-playbook path/to/playbook.yml
 curl -X POST "http://localhost:8000/analyze_playbook" \
   -H "Content-Type: application/json" \
   -d '{"playbook": "- name: My playbook\n  hosts: all\n  tasks:\n    - name: Install nginx\n      package:\n        name: nginx\n        state: present"}'
-=======
-# List available models
-python3 -m src.main model list
-
-# Download a specific model
-python3 -m src.main model download TinyLlama-1.1B-Chat-v1.0
-
-# Download and quantize a model to reduce memory usage
-python3 -m src.main model download TinyLlama-1.1B-Chat-v1.0 --quantize 8bit
->>>>>>> 8991e3e979b42abc899c6625c1b9fccf56b46070
 ```
 
 ### Using Windows SSH Examples
@@ -424,15 +426,77 @@ enable_failure_analysis = True
 enable_optimization = True
 ```
 
-<<<<<<< HEAD
 Then run your playbook with verbosity to see the advisor output:
 ```bash
 ansible-playbook -v your_playbook.yml
 ```
-=======
+
 ## Docker Development Environment
 
 A Docker-based development environment is available for easy testing across platforms (Linux, macOS, Windows).
+
+### Developer Tools
+
+This project includes several developer scripts to simplify common tasks:
+
+#### dev.sh - Development Helper Script
+
+The `dev.sh` script provides a convenient interface for common development tasks:
+
+```bash
+./dev.sh [command]
+```
+
+Available commands:
+- `setup`: Set up the test environment (create SSH keys, etc.)
+- `start`: Start the development environment
+- `stop`: Stop the development environment
+- `restart`: Restart the API service
+- `test`: Run all tests
+- `test-integration`: Run integration tests with mock Windows and Linux hosts
+- `test-windows`: Run test playbook on mock Windows host with PowerShell
+- `test-linux`: Run test playbook on mock Linux host
+- `linux-automation`: Run Linux system management playbook on mock Linux host
+- `linux-security`: Run Linux security hardening playbook on mock Linux host 
+- `shell`: Open a shell in the API container
+- `logs`: Show logs from the API service
+- `model list`: List available models
+- `model download X`: Download model X (where X is the model name)
+- `update`: Update dependencies and rebuild containers
+- `clean`: Clean up development environment (removes volumes)
+
+Key functionality behind the scenes:
+1. **Environment Setup** - Executes `setup_test_env.sh` which configures SSH keys and permissions
+2. **Container Management** - Uses Docker Compose with the `docker-compose.dev.yml` file to manage containers
+3. **Test Orchestration** - Handles SSH key scanning, waiting for services to start, and running the appropriate playbooks
+4. **Mock Host Management** - Provides commands for starting/testing both the mock Linux and Windows hosts
+5. **Linux Automation** - Contains special handling for the Linux automation examples with proper timing and key handling
+6. **Model Management** - Interfaces with the model system to list and download TinyLlama models
+
+#### fix_ssh.sh - SSH Connection Repair Tool
+
+If you encounter issues with SSH connectivity to the mock hosts, you can use the `fix_ssh.sh` script to quickly resolve them:
+
+```bash
+./scripts/fix_ssh.sh
+```
+
+This script:
+- Generates new SSH keys for both mock Linux and Windows hosts
+- Sets appropriate file permissions
+- Creates authorized_keys files
+- Updates local SSH configuration to trust the mock hosts
+- Resets the Docker environment
+- Tests the connectivity to ensure everything works
+
+Under the hood, the script:
+1. Creates necessary directory structure in tests/mock_linux_host and tests/mock_windows_host
+2. Generates fresh 4096-bit RSA SSH keys with `ssh-keygen`
+3. Sets proper file permissions (600 for private keys, 644 for public keys)
+4. Creates an authorized_keys file in the Windows host directory
+5. Updates local SSH configuration to disable strict host key checking for mock hosts
+6. Restarts the Docker environment to apply changes
+7. Verifies connectivity by attempting an SSH connection to the mock Linux host
 
 ### Prerequisites
 
@@ -760,13 +824,33 @@ Running the integration tests:
 
 ## Recent Updates
 
-### June 2025
+### June 21, 2025
 
-- Added sshpass to the test_runner container to support password-based SSH authentication with Ansible
+- Added comprehensive troubleshooting documentation for both mock Windows and Linux hosts
+- Enhanced the `dev.sh` script with more capabilities for testing and environment management 
+- Added `fix_ssh.sh` script to quickly resolve SSH connection issues with mock hosts
+- Improved documentation for cross-platform considerations and SSH key management
+- Added Linux automation examples with system management and security hardening playbooks
+- Enhanced the mock Linux host with Ubuntu 22.04 and full Ansible module support
+- Updated troubleshooting steps with detailed commands for verifying connections
+- Added support for raw module in Windows playbooks to execute PowerShell commands without Python requirements
+- Fixed PowerShell path in mock Windows host and inventory files (`/opt/microsoft/powershell/7/pwsh`)
+
+### June 10, 2025
+
+- Added Linux automation examples, roles, and playbooks for comprehensive Linux system management
+- Created Linux Common role with system information, package management, security, and user management tasks
+- Added Linux System Management and Security Hardening playbooks
+- Added Linux processor module for LLM-based Linux automation tasks with distribution detection
+- Created advanced integration tests for Linux automation features
+- Enhanced the dev.sh script with linux-automation and linux-security commands
+- Added mock Linux host for Linux testing scenarios with Ubuntu 22.04
+- Updated inventory.ini for Linux host with proper connection parameters
+- Added Linux-specific prompt templates for LLM integration
+- Enhanced documentation with comprehensive Linux testing and troubleshooting information
+- Added sshpass to the test_runner container to support password-based SSH authentication
 - Fixed PowerShell path in mock Windows host and inventory files (/opt/microsoft/powershell/7/pwsh)
-- Added support for raw module in playbooks to execute PowerShell commands without python3 requirements 
-- Enhanced documentation for working with the mock Windows host
-- Added example playbooks for quick testing and validation
+- Added support for raw module in playbooks to execute PowerShell commands without Python requirements
 - Created raw_test_playbook.yml for easy testing of the mock Windows host
 - Updated troubleshooting steps for common SSH connection issues
 
@@ -799,7 +883,6 @@ This project is in active development. The implementation follows the phases out
 ## License
 
 GNU General Public License v3.0
->>>>>>> 8991e3e979b42abc899c6625c1b9fccf56b46070
 
 ## Development Workflow
 
@@ -901,6 +984,47 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 5. Open a Pull Request
 
 ## Troubleshooting and FAQ
+
+### Using Helper Scripts for Troubleshooting
+
+For quick resolution of common issues, you can use the provided helper scripts:
+
+#### Quick SSH Repair with fix_ssh.sh
+
+If you're encountering any SSH-related issues with the mock hosts:
+
+```bash
+# Run the SSH repair script
+./scripts/fix_ssh.sh
+```
+
+This script automatically:
+1. Regenerates all SSH keys
+2. Configures proper permissions
+3. Updates SSH configurations
+4. Verifies connectivity
+
+#### Testing Environment Setup with dev.sh
+
+To verify your testing environment is properly set up:
+
+```bash
+# Reset and set up the environment 
+./dev.sh setup
+
+# Test basic connectivity
+./dev.sh test-linux
+./dev.sh test-windows
+```
+
+For more thorough testing:
+```bash
+# Run full test suite
+./dev.sh test
+
+# Run integration tests
+./dev.sh test-integration
+```
 
 ### Common Issues
 

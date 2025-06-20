@@ -97,11 +97,13 @@ async def startup_event():
     try:
         model_name = os.getenv("MODEL_NAME", "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T")
         quantization = os.getenv("QUANTIZATION", "4bit")
-        if quantization.lower() == "none":
+        device = os.getenv("DEVICE", None)  # Allow explicit device setting
+        
+        if quantization and quantization.lower() == "none":
             quantization = None
         
         logger.info(f"Loading model {model_name} with quantization {quantization}")
-        model, tokenizer = load_model(model_name=model_name, quantization=quantization)
+        model, tokenizer = load_model(model_name=model_name, quantization=quantization, device=device)
         logger.info("Model loaded successfully")
     except Exception as e:
         logger.error(f"Error loading model: {e}")
@@ -210,6 +212,10 @@ def main(host="127.0.0.1", port=8000, debug=False):
     """Start the API server."""
     logger.info(f"Starting API server on {host}:{port}")
     uvicorn.run("src.api.rest_api:app", host=host, port=port, reload=debug)
+
+def start_api_server(host="127.0.0.1", port=8000, debug=False):
+    """Wrapper function to start the API server. Called from main.py."""
+    return main(host=host, port=port, debug=debug)
 
 if __name__ == "__main__":
     main()
