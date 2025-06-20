@@ -264,7 +264,7 @@ graph TB
 
 2. Create and activate a python3 virtual environment:
    ```bash
-   python33.12 -m venv venv
+   python3.12 -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
@@ -279,7 +279,7 @@ graph TB
 
 4. Download a TinyLlama model:
    ```bash
-   python33 -m src.main model download TinyLlama-1.1B-Chat-v1.0
+   python3 -m src.main model download TinyLlama-1.1B-Chat-v1.0
    ```
    See the [Model Management Guide](docs/model_management.md) for more options.
 
@@ -347,7 +347,7 @@ You can also use Docker for development:
 # Starting the CLI Interface (shows available commands)
 cd ansible-llm
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-python33 -m src.main cli
+python3 -m src.main cli
 ```
 
 ### Available Ansible-llm CLI Commands
