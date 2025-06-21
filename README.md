@@ -781,153 +781,17 @@ If you encounter issues with the mock Windows host, try these troubleshooting st
    ansible_become=false
    ```
 
-### Linux Integration Tests
+## Integration Tests
 
-The project includes comprehensive integration tests for Linux functionality:
+The project includes comprehensive integration tests for verifying the functionality of the Ansible-TinyLlama integration:
 
-#### Basic Linux Integration Tests
+### Running the Integration Tests
 
-Basic integration tests (`tests/integration/test_linux_integration.py`) verify core Linux host functionality:
-- SSH connectivity to the mock Linux host
-- Running Ansible ping module against the Linux host
-- Gathering facts from the Linux host
-- Executing commands via Ansible
-- Running playbooks against the Linux host
+To run the integration tests, use the following command:
 
-#### Advanced Linux Integration Tests
-
-Advanced integration tests (`tests/integration/test_linux_advanced.py`) verify more complex Linux automation:
-- Running the Linux system management playbook
-- Testing the Linux security hardening playbook
-- Testing the linux_common role
-- Package installation tests
-- File operation tests
-
-#### Linux Processor Tests
-
-The Linux processor tests (`tests/integration/test_linux_processor.py`) verify the LLM integration:
-- Testing the distribution detection functionality
-- Generating package management tasks
-- Generating service control tasks
-- Testing user management task generation
-- Testing firewall configuration
-- LLM request processing for Linux automation
-
-Running the integration tests:
 ```bash
 # Run all integration tests
-./dev.sh test-integration
-
-# Run the basic Linux test playbook
-./dev.sh test-linux
-```
-
-## Recent Updates
-
-### June 21, 2025
-
-- Added comprehensive troubleshooting documentation for both mock Windows and Linux hosts
-- Enhanced the `dev.sh` script with more capabilities for testing and environment management 
-- Added `fix_ssh.sh` script to quickly resolve SSH connection issues with mock hosts
-- Improved documentation for cross-platform considerations and SSH key management
-- Added Linux automation examples with system management and security hardening playbooks
-- Enhanced the mock Linux host with Ubuntu 22.04 and full Ansible module support
-- Updated troubleshooting steps with detailed commands for verifying connections
-- Added support for raw module in Windows playbooks to execute PowerShell commands without Python requirements
-- Fixed PowerShell path in mock Windows host and inventory files (`/opt/microsoft/powershell/7/pwsh`)
-
-### June 10, 2025
-
-- Added Linux automation examples, roles, and playbooks for comprehensive Linux system management
-- Created Linux Common role with system information, package management, security, and user management tasks
-- Added Linux System Management and Security Hardening playbooks
-- Added Linux processor module for LLM-based Linux automation tasks with distribution detection
-- Created advanced integration tests for Linux automation features
-- Enhanced the dev.sh script with linux-automation and linux-security commands
-- Added mock Linux host for Linux testing scenarios with Ubuntu 22.04
-- Updated inventory.ini for Linux host with proper connection parameters
-- Added Linux-specific prompt templates for LLM integration
-- Enhanced documentation with comprehensive Linux testing and troubleshooting information
-- Added sshpass to the test_runner container to support password-based SSH authentication
-- Fixed PowerShell path in mock Windows host and inventory files (/opt/microsoft/powershell/7/pwsh)
-- Added support for raw module in playbooks to execute PowerShell commands without Python requirements
-- Created raw_test_playbook.yml for easy testing of the mock Windows host
-- Updated troubleshooting steps for common SSH connection issues
-
-## Development
-
-This project is in active development. The implementation follows the phases outlined in the specification document:
-
-1. **Phase 1: Foundation** (Current Phase)
-   - Basic integration between Ansible and TinyLlama 3
-   - Simple playbook generation from natural language
-   - Initial template library
-
-2. **Phase 2: Enhancement** (Upcoming)
-   - Advanced decision-making during playbook execution
-   - Infrastructure analysis and recommendations
-   - Performance optimizations
-
-3. **Phase 3: Advanced Features** (Planned)
-   - Learning from execution results to improve future automations
-   - Multi-model support (alternative LLMs)
-   - Advanced security features and compliance checking
-
-## Security Considerations
-
-- The LLM never has direct access to Ansible Vault or credentials
-- All LLM processing happens locally by default
-- Comprehensive logging of all LLM-generated content
-- Optional human approval for LLM-generated playbooks before execution
-
-## License
-
-GNU General Public License v3.0
-
-## Development Workflow
-
-1. **Fork and Clone the Repository**
-   ```bash
-   git clone https://github.com/yourusername/ansible-llm.git
-   cd ansible-llm
-   ```
-
-2. **Create a Branch**
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-3. **Make Changes and Test**
-   ```bash
-   # Implement your changes
-   # Run tests (to be implemented)
-   ```
-
-4. **Commit and Push**
-   ```bash
-   git add .
-   git commit -m "Add your detailed commit message"
-   git push origin feature/your-feature-name
-   ```
-
-5. **Create a Pull Request**
-   - Open a PR against the main branch
-   - Describe your changes in detail
-   - Link any related issues
-
-## Testing and CI/CD
-
-### Running Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run specific test modules
-pytest tests/unit/
-
-# Run with coverage report
-pytest --cov=src --cov-report=term-missing
+pytest tests/integration/
 ```
 
 ### Test Structure
@@ -1090,3 +954,105 @@ For a detailed changelog, see the [CHANGELOG.md](CHANGELOG.md) file.
 ## License
 
 GNU General Public License v3.0
+
+## Development Workflow
+
+1. **Fork and Clone the Repository**
+   ```bash
+   git clone https://github.com/yourusername/ansible-llm.git
+   cd ansible-llm
+   ```
+
+2. **Create a Branch**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+3. **Make Changes and Test**
+   ```bash
+   # Implement your changes
+   # Run tests (to be implemented)
+   ```
+
+4. **Commit and Push**
+   ```bash
+   git add .
+   git commit -m "Add your detailed commit message"
+   git push origin feature/your-feature-name
+   ```
+
+5. **Create a Pull Request**
+   - Open a PR against the main branch
+   - Describe your changes in detail
+   - Link any related issues
+
+## Troubleshooting Binary Output in Playbook Analysis
+
+When analyzing Ansible playbooks with the TinyLLM integration, you may occasionally encounter "binary-like" output that appears as nonsensical patterns of numbers, dots, or repeated characters. This is a known issue when working with smaller language models that sometimes get confused with complex inputs.
+
+### Symptoms of Binary Output
+
+The binary output issue usually manifests as:
+- Long repeating patterns of numbers or dots (e.g., `1.3.4.1.3.4...`)
+- Sequences of zeroes and ones (e.g., `0101010101...`)
+- Long repetitions of the same character (e.g., `............`)
+- Nonsensical combinations of characters with no logical structure
+
+### Quick Fix
+
+The quickest way to fix this issue is to use the `fix-analysis` command in the dev.sh script:
+
+```bash
+# Apply fixes for binary output in playbook analysis
+./dev.sh fix-analysis
+```
+
+This command will:
+1. Check for problematic model configurations and update them
+2. Download a better specialized chat model (TinyLlama-1.1B-Chat-v0.1)
+3. Update the response processor code to detect and handle binary patterns
+4. Add binary pattern detection to the direct CLI code
+5. Update the model generation parameters to reduce the chance of binary output
+
+### Using a Smaller Model
+
+If you continue to experience issues, you can use a smaller model specifically designed for chat interactions:
+
+```bash
+# Analyze a playbook with the tiny model
+./dev.sh analyze-playbook your_playbook.yml tiny
+```
+
+### Low Disk Space Issues
+
+Binary output can sometimes be caused by running out of disk space when loading a model. Check your available disk space:
+
+```bash
+# Check available disk space in containers
+./dev.sh check-disk-space
+```
+
+If you're low on disk space, clean the cache:
+
+```bash
+# Clean model cache to free up disk space
+./dev.sh clean-cache
+```
+
+### Manual Fixes
+
+If you need to manually fix the analysis code:
+
+1. Update your configuration to use a chat-specific model:
+   ```toml
+   # In config/config.toml
+   model_name = "TinyLlama/TinyLlama-1.1B-Chat-v0.1"
+   ```
+
+2. Ensure you're using a model specifically fine-tuned for chat or instruction-following, as these models are less likely to produce binary output compared to base models or intermediate checkpoints.
+
+3. Use lower temperature settings when generating text (0.5 or less) to get more focused outputs.
+
+4. Apply repetition penalties to avoid the model getting stuck in repetitive patterns.
+
+5. For very complex playbooks, consider breaking them down into smaller pieces for analysis.
